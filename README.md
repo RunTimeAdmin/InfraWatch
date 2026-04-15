@@ -124,7 +124,12 @@ npm run dev
 
 ## Screenshots
 
-*Screenshots coming soon*
+### War Room Dashboard
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="InfraWatch War Room Dashboard" />
+</p>
+
+*Live network health monitoring with real-time TPS, slot latency, congestion scoring, and epoch progress — all powered by Solana mainnet WebSocket data.*
 
 ---
 
@@ -141,8 +146,4 @@ npm run dev
 
 MIT
 
----
 
-<p align="center">
-  Built with ☕ by DC | CyberShield Austin / TokenAudit
-</p>
