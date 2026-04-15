@@ -28,7 +28,7 @@ export default function TpsCard() {
       subtitle="Transactions per second"
       status={status}
     >
-      <div className="h-16 -mx-2">
+      <div className="h-16 w-full min-w-0 -mx-2">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={displayData}>
             <defs>

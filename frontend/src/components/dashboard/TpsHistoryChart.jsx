@@ -85,7 +85,7 @@ export default function TpsHistoryChart() {
       </div>
       
       {/* Chart */}
-      <div className="h-[300px]">
+      <div className="h-[300px] w-full min-w-0">
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
