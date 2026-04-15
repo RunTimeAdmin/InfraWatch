@@ -17,12 +17,12 @@ export default function AppShell() {
   }, []);
 
   return (
-    <div className="flex h-screen w-full bg-bg-primary">
+    <div className="flex h-screen w-full bg-bg-primary overflow-hidden">
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
         <Header 
           connectionStatus={connectionStatus}
