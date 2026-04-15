@@ -16,6 +16,10 @@
   <img src="https://img.shields.io/badge/Socket.io-black.svg" alt="Socket.io" />
 </p>
 
+<p align="center">
+  <strong><a href="https://infrastructureintel.io">Live Demo: infrastructureintel.io</a></strong>
+</p>
+
 ---
 
 ## What is InfraWatch?
@@ -37,7 +41,7 @@ InfraWatch is the operational health dashboard that fills this gap — real-time
 | ✅ **Validator Health** | Real-time delinquency, skip rate, commission tracking, software version, data center location, Jito status, personal watchlists |
 | ⚡ **MEV & Jito Tracker** | % stake on Jito validators, tip floor trends, MEV-protected RPC guidance |
 | 🗺️ **Data Center Risk Map** | World map of validator locations, stake concentration by ASN, systemic risk scoring |
-| 🔗 **Bags Ecosystem Correlation** | Fee claim volume vs network congestion, token launch success vs RPC health |
+| 🔗 **Bags Ecosystem Integration** | Live Bags API integration — pool activity, token launches, lifetime fees correlated with network health |
 | 🔔 **Alert System** | Bags DM + dashboard notifications for validator delinquency, commission changes, RPC outages, congestion |
 
 ---
@@ -67,6 +71,7 @@ React Dashboard (Vite + Tailwind v4)
 | Database | PostgreSQL (pg), Redis (ioredis) |
 | Blockchain | @solana/web3.js, Helius API, Validators.app API |
 | Real-time | Socket.io (WebSocket + polling fallback) |
+| Ecosystem | Bags FM API (pools, launches, fees, trade quotes) |
 
 ---
 
@@ -117,6 +122,7 @@ npm run dev
 | `GET /api/validators/top` | Top validators by score |
 | `GET /api/epoch/current` | Current epoch info |
 | `GET /api/alerts/recent` | Recent alerts |
+| `GET /api/bags/pools` | Bags ecosystem pools and launches |
 
 **WebSocket Events:** `network:update`, `rpc:update`, `alert:new`
 
@@ -124,18 +130,13 @@ npm run dev
 
 ## Screenshots
 
-### War Room Dashboard
-<p align="center">
-  <img src="docs/screenshots/dashboard.png" alt="InfraWatch War Room Dashboard" />
-</p>
-
-*Live network health monitoring with real-time TPS, slot latency, congestion scoring, and epoch progress — all powered by Solana mainnet WebSocket data.*
+*Dashboard screenshots available at the [live demo](https://infrastructureintel.io). Local development screenshots in `docs/screenshots/`.*
 
 ---
 
 ## Roadmap
 
-- [x] **Week 1:** Foundation — Backend services, data pipeline, war room dashboard, RPC monitor
+- [x] **Week 1:** Foundation — Backend services, data pipeline, war room dashboard, RPC monitor, Bags API integration
 - [ ] **Week 2:** Validator scoring cards, commission change tracker, data center map
 - [ ] **Week 3:** MEV tracker, Bags ecosystem correlation panel
 - [ ] **Week 4:** Alert engine, Bags chat integration, $WATCH token

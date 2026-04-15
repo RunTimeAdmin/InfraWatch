@@ -42,6 +42,12 @@ const config = {
     baseUrl: process.env.VALIDATORS_APP_BASE_URL || 'https://www.validators.app/api/v1',
   },
 
+  // Bags FM API configuration
+  bags: {
+    apiKey: process.env.BAGS_API_KEY || '',
+    baseUrl: process.env.BAGS_API_BASE_URL || 'https://public-api-v2.bags.fm/api/v1',
+  },
+
   // Database configuration
   database: {
     url: process.env.DATABASE_URL || '',
