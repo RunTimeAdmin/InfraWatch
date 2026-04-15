@@ -28,4 +28,7 @@ npm-debug.log*
 
 # Cache
 .cache/
-.qoder/
+
+# Qoder - ignore all except repowiki
+.qoder/*
+!.qoder/repowiki/
