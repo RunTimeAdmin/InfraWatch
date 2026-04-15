@@ -106,6 +106,10 @@ body::after {
 /* Card hover glow effect */
 .metric-card {
   position: relative;
+  border: 1px solid rgba(0, 255, 136, 0.1);
+  background: rgba(18, 18, 26, 0.8);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
 
 .metric-card::before {
@@ -130,8 +134,9 @@ body::after {
 }
 
 .metric-card:hover {
-  border-color: rgba(0, 255, 136, 0.15);
-  box-shadow: 0 0 20px rgba(0, 255, 136, 0.05);
+  border-color: rgba(0, 255, 136, 0.3);
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.1), inset 0 0 20px rgba(0, 255, 136, 0.05);
+  background: rgba(18, 18, 26, 0.95);
 }
 
 /* Selection */
@@ -198,6 +203,23 @@ body::after {
     transform: scale(1.1);
     box-shadow: 0 0 16px rgba(0, 255, 136, 0.8);
   }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.3), 0 0 40px rgba(0, 255, 136, 0.1);
+  }
+  50% {
+    text-shadow: 0 0 30px rgba(0, 255, 136, 0.5), 0 0 60px rgba(0, 255, 136, 0.2);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+.animate-connection-pulse {
+  animation: connection-pulse 2s ease-in-out infinite;
 }
 
 .animate-pulse-glow {

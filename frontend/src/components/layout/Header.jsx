@@ -34,7 +34,7 @@ export default function Header() {
     <header 
       className="h-16 bg-bg-secondary flex items-center justify-between px-6 sticky top-0 z-40 relative"
       style={{
-        borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+        borderBottom: '1px solid rgba(0, 255, 136, 0.1)'
       }}
     >
       {/* Bottom border glow effect */}
@@ -66,9 +66,8 @@ export default function Header() {
             {/* Pulsing dot for LIVE status */}
             {isConnected && (
               <span 
-                className="w-2 h-2 rounded-full bg-accent-green"
+                className="w-2 h-2 rounded-full bg-accent-green animate-connection-pulse"
                 style={{
-                  animation: 'connection-pulse 2s ease-in-out infinite',
                   boxShadow: '0 0 8px rgba(0, 255, 136, 0.6)'
                 }}
               />
