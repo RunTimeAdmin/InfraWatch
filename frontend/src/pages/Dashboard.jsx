@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import useWebSocket from '../hooks/useWebSocket';
 import useNetworkStore from '../stores/networkStore';
 import { fetchNetworkCurrent, fetchNetworkHistory, fetchEpochInfo } from '../services/networkApi';
 
@@ -24,9 +23,6 @@ export default function Dashboard() {
     setCurrent, 
     setEpochInfo 
   } = useNetworkStore();
-  
-  // Initialize WebSocket
-  useWebSocket();
   
   // Fetch initial data on mount
   useEffect(() => {
