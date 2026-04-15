@@ -185,7 +185,7 @@ function normalizeValidator(validator) {
  */
 async function getValidators(limit = 100) {
   try {
-    const data = await makeRequest('/validators.json', {
+    const data = await makeRequest('/validators/mainnet.json', {
       order: 'score',
       limit,
     });
@@ -215,7 +215,7 @@ async function getValidators(limit = 100) {
  */
 async function getValidatorDetail(votePubkey) {
   try {
-    const data = await makeRequest(`/validators/${votePubkey}.json`);
+    const data = await makeRequest(`/validators/mainnet/${votePubkey}.json`);
 
     if (!data) {
       return null;
