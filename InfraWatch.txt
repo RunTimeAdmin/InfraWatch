@@ -1,0 +1,15 @@
+🥈 BUILD #2: InfraWatch — Solana Node & RPC Health Monitor for Bags Ecosystem
+Category: Bags API + Other Gap it fills: GAP 2
+
+What it is: An operational health monitoring dashboard for the Solana infrastructure layer — RPC endpoint health, validator uptime/commission, network congestion scoring, MEV exposure alerts — surfaced inside Bags as alerts and a dashboard. Fee-sharing token for operators who contribute monitoring data.
+
+Why it wins:
+
+Zero competition in this space across 170+ hackathon projects
+Your network engineering background is a genuine unfair advantage here
+Every other hackathon app depends on this infrastructure and nobody is monitoring it
+Solana's RPC reliability is a known pain point — this solves a real operational problem
+Bags fee-sharing mechanism creates a natural incentive for node operators to participate
+Feasibility: Medium-High. Leverages your existing knowledge. Requires integrating public Solana validator data (Solana Beach API, Validators.app) + building alert logic + Bags API for fee-sharing. 3-5 weeks to MVP.
+
+Revenue model: Premium monitoring tiers, enterprise RPC health SLA reports
