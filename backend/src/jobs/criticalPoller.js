@@ -35,10 +35,10 @@ function startCriticalPoller(io) {
       // 2. Enhance with Helius priority fee data if available
       const priorityFees = await helius.getPriorityFeeEstimate();
       if (priorityFees) {
-        snapshot.congestion_score = solanaRpc.calculateCongestionScore(
+        snapshot.congestionScore = solanaRpc.calculateCongestionScore(
           snapshot.tps,
           priorityFees.percentile90,
-          snapshot.slot_latency_ms
+          snapshot.slotLatencyMs
         );
       }
 
@@ -50,13 +50,13 @@ function startCriticalPoller(io) {
         await queries.insertNetworkSnapshot({
           tps: snapshot.tps,
           slot_height: snapshot.slot,
-          slot_latency_ms: snapshot.slot_latency_ms,
+          slot_latency_ms: snapshot.slotLatencyMs,
           epoch: snapshot.epoch,
-          epoch_progress: snapshot.epoch_progress,
-          delinquent_count: snapshot.delinquent_validators,
-          active_validators: snapshot.total_validators,
-          confirmation_time_ms: snapshot.avg_confirmation_ms,
-          congestion_score: snapshot.congestion_score,
+          epoch_progress: snapshot.epochProgress,
+          delinquent_count: snapshot.delinquentValidators,
+          active_validators: snapshot.totalValidators,
+          confirmation_time_ms: snapshot.avgConfirmationMs,
+          congestion_score: snapshot.congestionScore,
         });
       } catch (dbError) {
         console.warn('[CriticalPoller] DB insertNetworkSnapshot failed:', dbError.message);
