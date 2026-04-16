@@ -68,7 +68,7 @@ function startRoutinePoller(io) {
       try {
         totalValidatorCount = await validatorsApp.getTotalValidatorCount();
         if (totalValidatorCount > 0) {
-          await redis.setCache(cacheKeys.VALIDATORS_TOTAL_COUNT, { count: totalValidatorCount, timestamp: Date.now() }, cacheKeys.TTL.ROUTINE);
+          await redis.setCache(cacheKeys.VALIDATORS_TOTAL_COUNT, { count: totalValidatorCount, timestamp: Date.now() }, 600);
           console.log(`[RoutinePoller] Cached total validator count: ${totalValidatorCount}`);
         }
       } catch (countError) {

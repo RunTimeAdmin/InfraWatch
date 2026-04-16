@@ -8,6 +8,7 @@ const cron = require('node-cron');
 const solanaRpc = require('../services/solanaRpc');
 const helius = require('../services/helius');
 const rpcProber = require('../services/rpcProber');
+const validatorsApp = require('../services/validatorsApp');
 const queries = require('../models/queries');
 const redis = require('../models/redis');
 const cacheKeys = require('../models/cacheKeys');
@@ -33,16 +34,23 @@ function startCriticalPoller(io) {
       const snapshot = await solanaRpc.collectNetworkSnapshot();
 
       // 1a. Override totalValidators with accurate count from Validators.app if available
-      // RPC getVoteAccounts() only returns ~785 validators due to provider limits
-      // Validators.app returns the full ~1900 validators
       try {
-        const cachedCount = await redis.getCache(cacheKeys.VALIDATORS_TOTAL_COUNT);
+        let cachedCount = await redis.getCache(cacheKeys.VALIDATORS_TOTAL_COUNT);
+
         if (cachedCount && cachedCount.count > 0) {
           snapshot.totalValidators = cachedCount.count;
+        } else {
+          // Cache expired or empty — fetch fresh count directly
+          console.warn('[CriticalPoller] Validator count cache miss, fetching fresh from Validators.app...');
+          const freshCount = await validatorsApp.getTotalValidatorCount();
+          if (freshCount > 0) {
+            snapshot.totalValidators = freshCount;
+            // Re-cache it with 10-minute TTL to prevent repeated API calls
+            await redis.setCache(cacheKeys.VALIDATORS_TOTAL_COUNT, { count: freshCount, timestamp: Date.now() }, 600);
+          }
         }
       } catch (countError) {
-        // Graceful fallback - use RPC count
-        console.warn('[CriticalPoller] Could not fetch cached validator count:', countError.message);
+        console.warn('[CriticalPoller] Could not fetch validator count:', countError.message);
       }
 
       // 2. Enhance with Helius priority fee data if available
