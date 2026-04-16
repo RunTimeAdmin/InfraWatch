@@ -10,9 +10,9 @@
   /* Accent colors */
   --color-accent-green: #00ff88;
   --color-accent-green-dim: #00cc6a;
+  --color-accent-cyan: #00d4ff;
   --color-accent-amber: #ffaa00;
   --color-accent-red: #ff4444;
-  --color-accent-cyan: #00d4ff;
   
   /* Text colors */
   --color-text-primary: #e0e0e0;
@@ -47,7 +47,7 @@ body {
   overflow: hidden;
 }
 
-/* Grid Background Pattern - More visible but still subtle */
+/* Grid Background Pattern */
 body {
   background-image: 
     linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
@@ -56,7 +56,7 @@ body {
   background-attachment: fixed;
 }
 
-/* Scanline overlay for CRT/terminal effect */
+/* Scanline overlay for cyberpunk effect */
 body::after {
   content: '';
   position: fixed;
@@ -107,30 +107,9 @@ body::after {
 .metric-card {
   position: relative;
   border: 1px solid rgba(0, 255, 136, 0.1);
-  background: rgba(18, 18, 26, 0.8);
+  background: var(--color-bg-card);
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
-}
-
-.metric-card::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: 9px;
-  padding: 1px;
-  background: linear-gradient(135deg, transparent 0%, rgba(0, 255, 136, 0.1) 50%, transparent 100%);
-  -webkit-mask: 
-    linear-gradient(#fff 0 0) content-box, 
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
-.metric-card:hover::before {
-  opacity: 1;
 }
 
 .metric-card:hover {
@@ -147,7 +126,7 @@ body::after {
 
 /* Focus Styles */
 *:focus-visible {
-  outline: 1px solid var(--color-accent-green);
+  outline: 2px solid var(--color-accent-green);
   outline-offset: 2px;
 }
 
@@ -183,7 +162,7 @@ body::after {
   }
 }
 
-@keyframes logo-pulse {
+@keyframes glow-pulse {
   0%, 100% {
     text-shadow: 0 0 20px rgba(0, 255, 136, 0.3), 0 0 40px rgba(0, 255, 136, 0.1);
   }
@@ -205,21 +184,13 @@ body::after {
   }
 }
 
-@keyframes glow-pulse {
+@keyframes logo-pulse {
   0%, 100% {
     text-shadow: 0 0 20px rgba(0, 255, 136, 0.3), 0 0 40px rgba(0, 255, 136, 0.1);
   }
   50% {
     text-shadow: 0 0 30px rgba(0, 255, 136, 0.5), 0 0 60px rgba(0, 255, 136, 0.2);
   }
-}
-
-.animate-glow-pulse {
-  animation: glow-pulse 3s ease-in-out infinite;
-}
-
-.animate-connection-pulse {
-  animation: connection-pulse 2s ease-in-out infinite;
 }
 
 .animate-pulse-glow {
@@ -235,6 +206,14 @@ body::after {
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+.animate-connection-pulse {
+  animation: connection-pulse 2s ease-in-out infinite;
 }
 
 .animate-logo-pulse {

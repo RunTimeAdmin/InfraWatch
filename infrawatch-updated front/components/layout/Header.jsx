@@ -66,17 +66,16 @@ export default function Header() {
             {/* Pulsing dot for LIVE status */}
             {isConnected && (
               <span 
-                className="w-2 h-2 rounded-full bg-accent-green animate-connection-pulse"
+                className="w-2 h-2 rounded-full bg-accent-green"
                 style={{
+                  animation: 'connection-pulse 2s ease-in-out infinite',
                   boxShadow: '0 0 8px rgba(0, 255, 136, 0.6)'
                 }}
               />
             )}
-            <StatusIndicator 
-              status={isConnected ? 'healthy' : 'critical'}
-              label={isConnected ? 'LIVE' : 'OFFLINE'}
-              size="sm"
-            />
+            <span className={`text-xs font-medium ${isConnected ? 'text-accent-green' : 'text-accent-red'}`}>
+              {isConnected ? 'LIVE' : 'OFFLINE'}
+            </span>
           </div>
         </div>
 

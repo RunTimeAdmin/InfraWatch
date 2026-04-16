@@ -1,0 +1,29 @@
+{
+  "name": "infrawatch-dashboard",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "InfraWatch - Solana Infrastructure Monitoring Dashboard",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "wouter": "^3.3.5",
+    "lucide-react": "^0.453.0",
+    "@radix-ui/react-tooltip": "^1.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.1",
+    "@types/react-dom": "^19.2.1",
+    "@vitejs/plugin-react": "^5.0.4",
+    "typescript": "5.6.3",
+    "vite": "^7.1.7",
+    "tailwindcss": "^4.1.14",
+    "postcss": "^8.4.47",
+    "autoprefixer": "^10.4.20"
+  }
+}

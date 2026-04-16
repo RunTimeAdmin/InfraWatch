@@ -37,11 +37,36 @@ export default function MetricCard({
   const statusColor = statusColors[status] || statusColors.healthy;
   const statusBg = statusBgColors[status] || statusBgColors.healthy;
   const trendColor = trendColors[trend] || trendColors.neutral;
+  const isHealthy = status === 'healthy';
+
+  // Get hex color for value display
+  const valueHexColors = {
+    healthy: '#00ff88',
+    degraded: '#ffaa00',
+    critical: '#ff4444'
+  };
+  const valueColor = valueHexColors[status] || valueHexColors.healthy;
 
   return (
-    <div className="metric-card rounded-lg p-6 relative">
+    <div 
+      className={`metric-card rounded-lg p-6 relative
+                 transition-all duration-300 ease-out
+                 ${isHealthy ? 'hover:border-accent-green/30' : 'hover:border-border-accent'}`}
+      style={{
+        '--value-color': valueColor,
+      }}
+    >
+      {/* Subtle gradient glow for healthy status */}
+      {isHealthy && (
+        <div 
+          className="absolute inset-0 rounded-lg pointer-events-none opacity-0 hover:opacity-100 transition-opacity duration-500"
+          style={{
+            background: 'linear-gradient(135deg, rgba(0, 255, 136, 0.05) 0%, transparent 50%, rgba(0, 255, 136, 0.05) 100%)',
+          }}
+        />
+      )}
       {/* Header: Label left, Icon right */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-4 relative z-10">
         <p className="text-xs text-text-muted uppercase tracking-wider font-medium">
           {title}
         </p>
@@ -51,8 +76,8 @@ export default function MetricCard({
       </div>
 
       {/* Value */}
-      <div className="mb-3">
-        <p className="text-3xl font-bold text-text-primary">
+      <div className="mb-3 relative z-10">
+        <p className="text-3xl font-bold text-text-primary" style={{ color: valueColor }}>
           {value}
         </p>
       </div>
