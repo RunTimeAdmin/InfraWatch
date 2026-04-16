@@ -1,4 +1,5 @@
 import React from 'react';
+import { Activity } from 'lucide-react';
 import MetricCard from '../common/MetricCard';
 import useNetworkStore from '../../stores/networkStore';
 
@@ -23,6 +24,7 @@ export default function SlotLatencyCard() {
       value={displayValue}
       subtitle="target: 400ms"
       status={status}
+      lucideIcon={Activity}
     />
   );
 }

@@ -1,4 +1,5 @@
 import React from 'react';
+import { TrendingUp } from 'lucide-react';
 import useNetworkStore from '../../stores/networkStore';
 
 const getScoreLabel = (score) => {
@@ -12,6 +13,12 @@ const getScoreColor = (score) => {
   if (score <= 30) return '#00ff88';
   if (score <= 60) return '#ffaa00';
   return '#ff4444';
+};
+
+const getScoreStatus = (score) => {
+  if (score <= 30) return 'healthy';
+  if (score <= 60) return 'degraded';
+  return 'critical';
 };
 
 // Get gradient colors for smooth transition
@@ -31,6 +38,7 @@ export default function CongestionScoreCard() {
   const displayScore = score !== null ? Math.round(score) : '—';
   const label = score !== null ? getScoreLabel(score) : '—';
   const color = score !== null ? getScoreColor(score) : '#888888';
+  const status = score !== null ? getScoreStatus(score) : 'healthy';
   const [gradientStart, gradientEnd] = score !== null ? getGradientColors(score) : ['#888888', '#666666'];
   
   // SVG semi-circle gauge
@@ -53,22 +61,13 @@ export default function CongestionScoreCard() {
   const endpoint = score !== null ? getEndpointPosition(score) : { x: 6, y: 42 };
   
   return (
-    <div className="bg-bg-card border border-border-subtle rounded-lg p-4 hover:border-border-accent hover:scale-[1.01] transition-all duration-300 ease-out relative overflow-hidden">
-      {/* Subtle gradient border glow for healthy status */}
-      {score !== null && score <= 30 && (
-        <div 
-          className="absolute inset-0 rounded-lg pointer-events-none"
-          style={{
-            background: 'linear-gradient(135deg, rgba(0, 255, 136, 0.03) 0%, transparent 50%, rgba(0, 255, 136, 0.03) 100%)',
-          }}
-        />
-      )}
-      
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3 relative z-10">
-        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">
+    <div className="metric-card rounded-lg p-6 relative overflow-hidden">
+      {/* Header: Label left, Icon right */}
+      <div className="flex items-start justify-between mb-4">
+        <p className="text-xs text-text-muted uppercase tracking-wider font-medium">
           Congestion Score
-        </span>
+        </p>
+        <TrendingUp className={`w-5 h-5 ${status === 'healthy' ? 'text-accent-green' : status === 'degraded' ? 'text-accent-amber' : 'text-accent-red'}`} />
       </div>
       
       {/* Gauge */}
@@ -157,6 +156,13 @@ export default function CongestionScoreCard() {
             0-100 scale
           </p>
         </div>
+      </div>
+      
+      {/* Status Badge */}
+      <div className="flex items-center justify-end mt-3">
+        <span className={`text-xs px-2 py-1 rounded-full ${status === 'healthy' ? 'bg-accent-green/10 text-accent-green' : status === 'degraded' ? 'bg-accent-amber/10 text-accent-amber' : 'bg-accent-red/10 text-accent-red'}`}>
+          {status === 'healthy' ? 'Healthy' : status === 'degraded' ? 'Degraded' : 'Critical'}
+        </span>
       </div>
     </div>
   );

@@ -49,6 +49,12 @@ export default function Dashboard() {
   
   return (
     <div className="space-y-6 pb-6">
+      {/* Page Header */}
+      <div>
+        <h2 className="text-2xl font-bold text-text-primary mb-2">Network Overview</h2>
+        <p className="text-text-muted">Real-time Solana infrastructure metrics and health status</p>
+      </div>
+        
       {/* Network Status Banner */}
       <NetworkStatusBanner />
       

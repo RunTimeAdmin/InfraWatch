@@ -1,4 +1,5 @@
 import React from 'react';
+import { Users } from 'lucide-react';
 import MetricCard from '../common/MetricCard';
 import useNetworkStore from '../../stores/networkStore';
 import { formatNumber } from '../../utils/formatters';
@@ -18,6 +19,7 @@ export default function ActiveValidatorsCard() {
       value={activeCount !== null ? formatNumber(activeCount) : '—'}
       subtitle={comparison !== 0 ? `${comparison > 0 ? '+' : ''}${formatNumber(comparison)} vs baseline` : '—'}
       status="healthy"
+      lucideIcon={Users}
     />
   );
 }

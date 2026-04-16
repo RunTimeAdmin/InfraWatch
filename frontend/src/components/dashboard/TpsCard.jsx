@@ -1,5 +1,6 @@
 import React from 'react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
+import { BarChart3 } from 'lucide-react';
 import MetricCard from '../common/MetricCard';
 import useNetworkStore from '../../stores/networkStore';
 import { formatNumber } from '../../utils/formatters';
@@ -25,8 +26,8 @@ export default function TpsCard() {
     <MetricCard
       title="Network TPS"
       value={tps !== null ? formatNumber(Math.round(tps)) : '—'}
-      subtitle="Transactions per second"
       status={status}
+      lucideIcon={BarChart3}
     >
       <div className="h-16 w-full -mx-2">
         <ResponsiveContainer width="99%" height="100%">

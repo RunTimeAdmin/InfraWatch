@@ -1,4 +1,5 @@
 import React from 'react';
+import { Zap } from 'lucide-react';
 import MetricCard from '../common/MetricCard';
 import useNetworkStore from '../../stores/networkStore';
 
@@ -23,6 +24,7 @@ export default function ConfirmationTimeCard() {
       value={displayValue}
       subtitle="1h rolling average"
       status={getStatus(confirmationTime)}
+      lucideIcon={Zap}
     />
   );
 }

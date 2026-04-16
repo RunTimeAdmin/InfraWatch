@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertTriangle } from 'lucide-react';
 import MetricCard from '../common/MetricCard';
 import useNetworkStore from '../../stores/networkStore';
 import { formatNumber } from '../../utils/formatters';
@@ -10,13 +11,15 @@ export default function DelinquentValidatorsCard() {
   const activeCount = current?.activeValidators ?? null;
   
   const hasDelinquents = delinquentCount > 0;
+  const status = hasDelinquents ? 'critical' : 'healthy';
   
   return (
     <MetricCard
       title="Delinquent Validators"
       value={delinquentCount !== null ? formatNumber(delinquentCount) : '—'}
       subtitle={activeCount !== null ? `of ${formatNumber(activeCount)} total` : '—'}
-      status={hasDelinquents ? 'critical' : 'healthy'}
+      status={status}
+      lucideIcon={AlertTriangle}
     >
       {hasDelinquents && (
         <div className="mt-2 flex items-center gap-2">
