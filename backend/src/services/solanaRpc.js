@@ -198,16 +198,30 @@ async function getConfirmationTime() {
       };
     }
 
-    // Calculate average confirmation time from samples
-    // numTransactions / samplePeriodSecs gives TPS, but we need confirmation time
-    // Use a proxy metric: lower TPS often correlates with higher confirmation times
-    // For now, return estimated confirmation based on sample period
-    const totalPeriod = samples.reduce((sum, s) => sum + s.samplePeriodSecs, 0);
-    const avgConfirmationMs = (totalPeriod / samples.length) * 1000;
+    // Calculate average slot time from performance samples
+    // Each sample has numSlots and samplePeriodSecs
+    // avgSlotTime = samplePeriodSecs / numSlots (in seconds per slot)
+    // Confirmation time ≈ avgSlotTime * 32 (for finalized confirmation, ~32 slots)
+    let totalSlotTime = 0;
+    let validSamples = 0;
+    for (const sample of samples) {
+      if (sample.numSlots > 0) {
+        totalSlotTime += (sample.samplePeriodSecs / sample.numSlots);
+        validSamples++;
+      }
+    }
+
+    if (validSamples === 0) {
+      return { avgConfirmationMs: 0, sampleCount: 0 };
+    }
+
+    const avgSlotTimeSecs = totalSlotTime / validSamples;
+    // Optimistic confirmation typically takes ~32 slots
+    const avgConfirmationMs = Math.round(avgSlotTimeSecs * 32 * 1000);
 
     return {
-      avgConfirmationMs: Math.round(avgConfirmationMs),
-      sampleCount: samples.length,
+      avgConfirmationMs,
+      sampleCount: validSamples,
     };
   } catch (error) {
     console.error('[SolanaRpc] getConfirmationTime error:', error.message);
