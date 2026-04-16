@@ -6,8 +6,8 @@ import { formatNumber } from '../../utils/formatters';
 
 const getValidatorStatus = (count) => {
   if (count === null || count === undefined) return 'healthy';
-  if (count >= 1700) return 'healthy';
-  if (count >= 1500) return 'degraded';
+  if (count >= 700) return 'healthy';
+  if (count >= 600) return 'degraded';
   return 'critical';
 };
 
@@ -17,7 +17,7 @@ export default function ActiveValidatorsCard() {
   const activeCount = current?.activeValidators ?? null;
   
   // Baseline for comparison (typical Solana validator count)
-  const baseline = 1900;
+  const baseline = 800;
   const comparison = activeCount !== null ? activeCount - baseline : 0;
   const status = getValidatorStatus(activeCount);
   

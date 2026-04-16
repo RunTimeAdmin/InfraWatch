@@ -12,8 +12,8 @@ export default function DelinquentValidatorsCard() {
   
   const getDelinquentStatus = (count) => {
     if (count === null || count === undefined) return 'healthy';
-    if (count < 50) return 'healthy';
-    if (count < 200) return 'degraded';
+    if (count < 30) return 'healthy';
+    if (count < 80) return 'degraded';
     return 'critical';
   };
   
