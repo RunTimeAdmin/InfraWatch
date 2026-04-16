@@ -19,21 +19,21 @@ const transformNetworkData = (data) => {
     health: data.health ?? data.status ?? 'unknown',
     
     // Validator counts
-    delinquentCount: data.delinquent_validators ?? data.delinquentCount ?? null,
-    activeValidators: data.total_validators ?? data.active_validators ?? data.activeValidators ?? null,
-    totalValidators: data.total_validators ?? data.active_validators ?? null,
+    delinquentCount: data.delinquentValidators ?? data.delinquent_validators ?? data.delinquentCount ?? null,
+    activeValidators: data.totalValidators ?? data.total_validators ?? data.active_validators ?? data.activeValidators ?? null,
+    totalValidators: data.totalValidators ?? data.total_validators ?? data.active_validators ?? null,
     
     // Timing and latency
-    slotLatencyMs: data.slot_latency_ms ?? data.slotLatencyMs ?? null,
-    confirmationTimeMs: data.avg_confirmation_ms ?? data.confirmation_time_ms ?? data.confirmationTimeMs ?? null,
-    avgConfirmationMs: data.avg_confirmation_ms ?? data.confirmation_time_ms ?? null,
+    slotLatencyMs: data.slotLatencyMs ?? data.slot_latency_ms ?? null,
+    confirmationTimeMs: data.avgConfirmationMs ?? data.avg_confirmation_ms ?? data.confirmation_time_ms ?? data.confirmationTimeMs ?? null,
+    avgConfirmationMs: data.avgConfirmationMs ?? data.avg_confirmation_ms ?? data.confirmation_time_ms ?? null,
     
     // Epoch info
-    epochProgress: data.epoch_progress ?? data.epochProgress ?? null,
+    epochProgress: data.epochProgress ?? data.epoch_progress ?? null,
     epochEtaMs: data.epoch_eta_ms ?? data.epochEtaMs ?? null,
     
     // Congestion
-    congestionScore: data.congestion_score ?? data.congestionScore ?? null,
+    congestionScore: data.congestionScore ?? data.congestion_score ?? null,
     
     // Priority fees (if available)
     priorityFeeLow: data.priority_fee_low ?? data.priorityFeeLow ?? null,

@@ -39,7 +39,7 @@ export default function MetricCard({
   const trendColor = trendColors[trend] || trendColors.neutral;
 
   return (
-    <div className="metric-card rounded-lg p-6 relative overflow-hidden">
+    <div className="metric-card rounded-lg p-6 relative">
       {/* Header: Label left, Icon right */}
       <div className="flex items-start justify-between mb-4">
         <p className="text-xs text-text-muted uppercase tracking-wider font-medium">
