@@ -32,6 +32,19 @@ function startCriticalPoller(io) {
       // 1. Collect network snapshot (TPS, slot, epoch, delinquent count, congestion)
       const snapshot = await solanaRpc.collectNetworkSnapshot();
 
+      // 1a. Override totalValidators with accurate count from Validators.app if available
+      // RPC getVoteAccounts() only returns ~785 validators due to provider limits
+      // Validators.app returns the full ~1900 validators
+      try {
+        const cachedCount = await redis.getCache(cacheKeys.VALIDATORS_TOTAL_COUNT);
+        if (cachedCount && cachedCount.count > 0) {
+          snapshot.totalValidators = cachedCount.count;
+        }
+      } catch (countError) {
+        // Graceful fallback - use RPC count
+        console.warn('[CriticalPoller] Could not fetch cached validator count:', countError.message);
+      }
+
       // 2. Enhance with Helius priority fee data if available
       const priorityFees = await helius.getPriorityFeeEstimate();
       if (priorityFees) {

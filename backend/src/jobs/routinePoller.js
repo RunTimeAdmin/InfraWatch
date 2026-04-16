@@ -62,14 +62,27 @@ function startRoutinePoller(io) {
         }
       }
 
-      // 5. Update Redis cache (graceful - don't crash if Redis unavailable)
+      // 5. Fetch and cache total validator count from Validators.app
+      // This provides an accurate count (~1900) vs RPC's limited response (~785)
+      let totalValidatorCount = 0;
+      try {
+        totalValidatorCount = await validatorsApp.getTotalValidatorCount();
+        if (totalValidatorCount > 0) {
+          await redis.setCache(cacheKeys.VALIDATORS_TOTAL_COUNT, { count: totalValidatorCount, timestamp: Date.now() }, cacheKeys.TTL.ROUTINE);
+          console.log(`[RoutinePoller] Cached total validator count: ${totalValidatorCount}`);
+        }
+      } catch (countError) {
+        console.warn('[RoutinePoller] Failed to fetch total validator count:', countError.message);
+      }
+
+      // 6. Update Redis cache (graceful - don't crash if Redis unavailable)
       try {
         await redis.setCache(cacheKeys.VALIDATORS_TOP100, validators, cacheKeys.TTL.ROUTINE);
       } catch (redisError) {
         console.warn('[RoutinePoller] Redis cache update failed:', redisError.message);
       }
 
-      // 6. Update epoch info cache
+      // 7. Update epoch info cache
       try {
         const epochInfo = await solanaRpc.getEpochInfo();
         await redis.setCache(cacheKeys.EPOCH_INFO, epochInfo, cacheKeys.TTL.EPOCH);
@@ -77,7 +90,7 @@ function startRoutinePoller(io) {
         console.warn('[RoutinePoller] Epoch info fetch/cache failed:', epochError.message);
       }
 
-      // 7. Create alerts for commission changes
+      // 8. Create alerts for commission changes
       for (const change of changes) {
         const alert = {
           type: 'commission_change',

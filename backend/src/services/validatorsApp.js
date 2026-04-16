@@ -179,6 +179,33 @@ function normalizeValidator(validator) {
 }
 
 /**
+ * Get total validator count from Validators.app
+ * Fetches all validators to get an accurate count (mainnet has ~1900 validators)
+ * @returns {Promise<number>} Total validator count
+ */
+async function getTotalValidatorCount() {
+  try {
+    // Fetch with a high limit to get all validators
+    // The API returns an array, so the length is the total count
+    const data = await makeRequest('/validators/mainnet.json', {
+      limit: 5000, // High enough to get all validators
+    });
+
+    if (!data || !Array.isArray(data)) {
+      console.error('[ValidatorsApp] Invalid response format for count');
+      return 0;
+    }
+
+    const count = data.length;
+    console.log(`[ValidatorsApp] Total validator count: ${count}`);
+    return count;
+  } catch (error) {
+    console.error('[ValidatorsApp] getTotalValidatorCount error:', error.message);
+    return 0;
+  }
+}
+
+/**
  * Get validators list
  * @param {number} limit - Number of validators to fetch (default: 100)
  * @returns {Promise<Array<Object>>} Normalized validators array
@@ -379,6 +406,7 @@ module.exports = {
   getDelinquentValidators,
   getTopValidatorsByStake,
   getValidatorsByDataCenter,
+  getTotalValidatorCount,
   isConfigured,
   getRateLimitStatus,
   // Export for testing

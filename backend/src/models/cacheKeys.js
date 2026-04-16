@@ -9,6 +9,7 @@ module.exports = {
   RPC_LATEST: 'rpc:latest',                  // TTL: 60s
   EPOCH_INFO: 'epoch:info',                   // TTL: 120s
   VALIDATORS_TOP100: 'validators:top100',     // TTL: 300s
+  VALIDATORS_TOTAL_COUNT: 'validators:totalCount', // TTL: 300s
 
   /**
    * Get cache key for a specific RPC provider
