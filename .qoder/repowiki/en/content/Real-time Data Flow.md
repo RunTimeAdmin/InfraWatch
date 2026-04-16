@@ -20,6 +20,13 @@
 - [validatorStore.js](file://frontend/src/stores/validatorStore.js)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Enhanced WebSocket communication module with centralized broadcast utilities and room-based messaging
+- Expanded Redis caching strategies with TTL management and improved cache key organization
+- Improved data normalization capabilities in validators service with enhanced validator schema mapping
+- Strengthened real-time state management with centralized WebSocket event handling
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
@@ -32,7 +39,7 @@
 9. [Conclusion](#conclusion)
 
 ## Introduction
-This document explains InfraWatch’s real-time data flow architecture. It covers the data collection pipeline from critical pollers and external APIs, data processing and persistence, caching strategies, WebSocket broadcasting for live updates, client-side state management, background job scheduling, synchronization patterns, and performance optimizations for real-time delivery.
+This document explains InfraWatch's real-time data flow architecture. It covers the data collection pipeline from critical pollers and external APIs, data processing and persistence, caching strategies, WebSocket broadcasting for live updates, client-side state management, background job scheduling, synchronization patterns, and performance optimizations for real-time delivery.
 
 ## Project Structure
 The backend is organized around a modular architecture:
@@ -87,19 +94,19 @@ RP --> CFG
 
 **Diagram sources**
 - [server.js:1-128](file://backend/server.js#L1-L128)
-- [criticalPoller.js:1-108](file://backend/src/jobs/criticalPoller.js#L1-L108)
-- [routinePoller.js:1-116](file://backend/src/jobs/routinePoller.js#L1-L116)
-- [solanaRpc.js:1-340](file://backend/src/services/solanaRpc.js#L1-L340)
+- [criticalPoller.js:1-129](file://backend/src/jobs/criticalPoller.js#L1-L129)
+- [routinePoller.js:1-129](file://backend/src/jobs/routinePoller.js#L1-L129)
+- [solanaRpc.js:1-359](file://backend/src/services/solanaRpc.js#L1-L359)
 - [helius.js:1-188](file://backend/src/services/helius.js#L1-L188)
 - [rpcProber.js:1-342](file://backend/src/services/rpcProber.js#L1-L342)
-- [validatorsApp.js:1-388](file://backend/src/services/validatorsApp.js#L1-L388)
+- [validatorsApp.js:1-416](file://backend/src/services/validatorsApp.js#L1-L416)
 - [queries.js:1-459](file://backend/src/models/queries.js#L1-L459)
 - [redis.js:1-161](file://backend/src/models/redis.js#L1-L161)
-- [cacheKeys.js:1-50](file://backend/src/models/cacheKeys.js#L1-L50)
+- [cacheKeys.js:1-51](file://backend/src/models/cacheKeys.js#L1-L51)
 - [index.js](file://backend/src/websocket/index.js:1-81)
 - [index.js](file://backend/src/config/index.js:1-68)
-- [useWebSocket.js:1-30](file://frontend/src/hooks/useWebSocket.js#L1-L30)
-- [networkStore.js:1-25](file://frontend/src/stores/networkStore.js#L1-L25)
+- [useWebSocket.js:1-73](file://frontend/src/hooks/useWebSocket.js#L1-L73)
+- [networkStore.js:1-48](file://frontend/src/stores/networkStore.js#L1-L48)
 - [rpcStore.js:1-16](file://frontend/src/stores/rpcStore.js#L1-L16)
 - [validatorStore.js:1-28](file://frontend/src/stores/validatorStore.js#L1-L28)
 
@@ -111,27 +118,28 @@ RP --> CFG
 - Background jobs: Critical and routine pollers schedule periodic data collection, processing, persistence, caching, and broadcasting.
 - External integrations: Solana RPC, Helius API, RPC provider probing, and Validators.app API.
 - Data access and caching: PostgreSQL via parameterized queries and Redis for fast reads/writes.
-- Real-time messaging: Socket.io server with connection lifecycle and event broadcasting.
+- Real-time messaging: Socket.io server with centralized connection lifecycle management and event broadcasting utilities.
 - Frontend state: React hooks and Zustand stores subscribe to WebSocket events and manage UI state.
 
 **Section sources**
-- [criticalPoller.js:1-108](file://backend/src/jobs/criticalPoller.js#L1-L108)
-- [routinePoller.js:1-116](file://backend/src/jobs/routinePoller.js#L1-L116)
-- [solanaRpc.js:1-340](file://backend/src/services/solanaRpc.js#L1-L340)
+- [criticalPoller.js:1-129](file://backend/src/jobs/criticalPoller.js#L1-L129)
+- [routinePoller.js:1-129](file://backend/src/jobs/routinePoller.js#L1-L129)
+- [solanaRpc.js:1-359](file://backend/src/services/solanaRpc.js#L1-L359)
 - [helius.js:1-188](file://backend/src/services/helius.js#L1-L188)
 - [rpcProber.js:1-342](file://backend/src/services/rpcProber.js#L1-L342)
-- [validatorsApp.js:1-388](file://backend/src/services/validatorsApp.js#L1-L388)
+- [validatorsApp.js:1-416](file://backend/src/services/validatorsApp.js#L1-L416)
 - [queries.js:1-459](file://backend/src/models/queries.js#L1-L459)
 - [redis.js:1-161](file://backend/src/models/redis.js#L1-L161)
 - [index.js](file://backend/src/websocket/index.js:1-81)
-- [useWebSocket.js:1-30](file://frontend/src/hooks/useWebSocket.js#L1-L30)
-- [networkStore.js:1-25](file://frontend/src/stores/networkStore.js#L1-L25)
+- [useWebSocket.js:1-73](file://frontend/src/hooks/useWebSocket.js#L1-L73)
+- [networkStore.js:1-48](file://frontend/src/stores/networkStore.js#L1-L48)
 
 ## Architecture Overview
-The system follows a publish-subscribe pattern:
+The system follows a publish-subscribe pattern with centralized WebSocket communication:
 - Pollers collect data, compute metrics, persist to PostgreSQL, cache in Redis, and emit events via Socket.io.
 - Clients connect via WebSocket, receive live updates, and update local state through stores.
 - Configuration drives external endpoints, intervals, and feature toggles.
+- Centralized WebSocket utilities provide both global and room-specific broadcasting capabilities.
 
 ```mermaid
 sequenceDiagram
@@ -155,16 +163,92 @@ IO-->>FE : "Receive live updates"
 ```
 
 **Diagram sources**
-- [criticalPoller.js:23-100](file://backend/src/jobs/criticalPoller.js#L23-L100)
-- [solanaRpc.js:275-328](file://backend/src/services/solanaRpc.js#L275-L328)
+- [criticalPoller.js:22-124](file://backend/src/jobs/criticalPoller.js#L22-L124)
+- [solanaRpc.js:289-347](file://backend/src/services/solanaRpc.js#L289-L347)
 - [helius.js:13-70](file://backend/src/services/helius.js#L13-L70)
 - [rpcProber.js:140-180](file://backend/src/services/rpcProber.js#L140-L180)
 - [queries.js:27-118](file://backend/src/models/queries.js#L27-L118)
 - [redis.js:99-112](file://backend/src/models/redis.js#L99-L112)
 - [index.js](file://backend/src/websocket/index.js:48-52)
-- [useWebSocket.js:21-23](file://frontend/src/hooks/useWebSocket.js#L21-L23)
+- [useWebSocket.js:63-66](file://frontend/src/hooks/useWebSocket.js#L63-L66)
 
 ## Detailed Component Analysis
+
+### Enhanced WebSocket Communication System
+The WebSocket module now provides centralized communication utilities with enhanced capabilities:
+
+- **Centralized Setup**: Socket.io initialization with connection tracking, error handling, and global broadcast utilities.
+- **Room-based Messaging**: Support for broadcasting to specific rooms for targeted client groups.
+- **Connection Management**: Real-time connection counting and lifecycle management.
+- **Event Broadcasting**: Both global and room-specific event emission for flexible client targeting.
+
+```mermaid
+flowchart TD
+WS["WebSocket Module"] --> Setup["setupWebSocket(io)"]
+Setup --> Conn["Connection Tracking"]
+Conn --> Count["getConnectedCount()"]
+WS --> Broadcast["broadcast(event, data)"]
+WS --> Room["broadcastToRoom(room, event, data)"]
+WS --> IO["getIO()"]
+```
+
+**Diagram sources**
+- [index.js](file://backend/src/websocket/index.js:13-81)
+
+**Section sources**
+- [index.js](file://backend/src/websocket/index.js:1-81)
+
+### Advanced Redis Caching Strategy
+Redis implementation now features comprehensive caching with TTL management and centralized key organization:
+
+- **Lazy Initialization**: Connection established on-demand with retry strategy and connection lifecycle logging.
+- **JSON Serialization**: Automatic JSON parsing and stringification for cache values.
+- **TTL Management**: Configurable time-to-live values for different cache categories.
+- **Centralized Key Management**: Organized cache key constants with helper functions for dynamic keys.
+
+```mermaid
+flowchart TD
+Redis["Redis Module"] --> Init["initRedis()"]
+Init --> Connect["Connection with Retry"]
+Redis --> Get["getCache(key)"]
+Redis --> Set["setCache(key, data, ttl)"]
+Redis --> Del["deleteCache(key)"]
+Redis --> Keys["cacheKeys.js"]
+Keys --> TTL["TTL Constants"]
+Keys --> Helpers["Dynamic Key Helpers"]
+```
+
+**Diagram sources**
+- [redis.js:16-161](file://backend/src/models/redis.js#L16-L161)
+- [cacheKeys.js:6-51](file://backend/src/models/cacheKeys.js#L6-L51)
+
+**Section sources**
+- [redis.js:1-161](file://backend/src/models/redis.js#L1-L161)
+- [cacheKeys.js:1-51](file://backend/src/models/cacheKeys.js#L1-L51)
+
+### Enhanced Data Normalization Capabilities
+Validators service now includes comprehensive data normalization with enhanced schema mapping:
+
+- **Comprehensive Field Mapping**: Extensive normalization from Validators.app format to internal schema.
+- **Data Type Conversion**: Automatic conversion of stake amounts from lamports to SOL.
+- **Conditional Field Handling**: Graceful handling of missing or optional fields.
+- **Historical Timestamps**: Automatic timestamp generation for data freshness tracking.
+
+```mermaid
+flowchart TD
+Raw["Validators.app Raw Data"] --> Normalize["normalizeValidator()"]
+Normalize --> Fields["Field Mapping & Conversion"]
+Fields --> Stake["stake_sol: Convert from lamports"]
+Fields --> Optional["Handle Missing Fields"]
+Fields --> Schema["Internal Schema Format"]
+Schema --> Cache["Update Cache"]
+```
+
+**Diagram sources**
+- [validatorsApp.js:156-179](file://backend/src/services/validatorsApp.js#L156-L179)
+
+**Section sources**
+- [validatorsApp.js:156-179](file://backend/src/services/validatorsApp.js#L156-L179)
 
 ### Data Collection Pipeline
 - Critical Poller (every 30 seconds):
@@ -195,8 +279,8 @@ Broadcast --> End(["Complete"])
 ```
 
 **Diagram sources**
-- [criticalPoller.js:32-92](file://backend/src/jobs/criticalPoller.js#L32-L92)
-- [solanaRpc.js:275-328](file://backend/src/services/solanaRpc.js#L275-L328)
+- [criticalPoller.js:32-115](file://backend/src/jobs/criticalPoller.js#L32-L115)
+- [solanaRpc.js:289-347](file://backend/src/services/solanaRpc.js#L289-L347)
 - [helius.js:13-70](file://backend/src/services/helius.js#L13-L70)
 - [rpcProber.js:140-180](file://backend/src/services/rpcProber.js#L140-L180)
 - [queries.js:27-118](file://backend/src/models/queries.js#L27-L118)
@@ -204,8 +288,8 @@ Broadcast --> End(["Complete"])
 - [index.js](file://backend/src/websocket/index.js:48-52)
 
 **Section sources**
-- [criticalPoller.js:17-100](file://backend/src/jobs/criticalPoller.js#L17-L100)
-- [routinePoller.js:16-107](file://backend/src/jobs/routinePoller.js#L16-L107)
+- [criticalPoller.js:17-124](file://backend/src/jobs/criticalPoller.js#L17-L124)
+- [routinePoller.js:16-123](file://backend/src/jobs/routinePoller.js#L16-L123)
 
 ### External API Integrations
 - Solana RPC:
@@ -254,6 +338,7 @@ class ValidatorsApp {
 +getCachedValidators()
 +detectCommissionChanges(current, cached)
 +getRateLimitStatus()
++normalizeValidator(validator)
 }
 SolanaRpc --> Helius : "uses for priority fees"
 CriticalPoller ..> SolanaRpc : "collectNetworkSnapshot"
@@ -262,18 +347,18 @@ RoutinePoller ..> ValidatorsApp : "getValidators"
 ```
 
 **Diagram sources**
-- [solanaRpc.js:16-328](file://backend/src/services/solanaRpc.js#L16-L328)
+- [solanaRpc.js:16-347](file://backend/src/services/solanaRpc.js#L16-L347)
 - [helius.js:13-187](file://backend/src/services/helius.js#L13-L187)
 - [rpcProber.js:75-307](file://backend/src/services/rpcProber.js#L75-L307)
-- [validatorsApp.js:186-387](file://backend/src/services/validatorsApp.js#L186-L387)
+- [validatorsApp.js:186-416](file://backend/src/services/validatorsApp.js#L186-L416)
 - [criticalPoller.js:32-46](file://backend/src/jobs/criticalPoller.js#L32-L46)
 - [routinePoller.js:30-31](file://backend/src/jobs/routinePoller.js#L30-L31)
 
 **Section sources**
-- [solanaRpc.js:16-328](file://backend/src/services/solanaRpc.js#L16-L328)
+- [solanaRpc.js:16-347](file://backend/src/services/solanaRpc.js#L16-L347)
 - [helius.js:13-187](file://backend/src/services/helius.js#L13-L187)
 - [rpcProber.js:75-307](file://backend/src/services/rpcProber.js#L75-L307)
-- [validatorsApp.js:186-387](file://backend/src/services/validatorsApp.js#L186-L387)
+- [validatorsApp.js:186-416](file://backend/src/services/validatorsApp.js#L186-L416)
 
 ### Data Processing and Persistence
 - PostgreSQL:
@@ -336,8 +421,8 @@ FE->>Store : "setAlerts(alert)"
 
 **Diagram sources**
 - [index.js](file://backend/src/websocket/index.js:13-52)
-- [criticalPoller.js:88-92](file://backend/src/jobs/criticalPoller.js#L88-L92)
-- [routinePoller.js:96-100](file://backend/src/jobs/routinePoller.js#L96-L100)
+- [criticalPoller.js:110-113](file://backend/src/jobs/criticalPoller.js#L110-L113)
+- [routinePoller.js:110-113](file://backend/src/jobs/routinePoller.js#L110-L113)
 - [useWebSocket.js:8-28](file://frontend/src/hooks/useWebSocket.js#L8-L28)
 - [networkStore.js:17](file://frontend/src/stores/networkStore.js#L17)
 
@@ -427,8 +512,9 @@ WS["websocket/index.js"] --> FE["frontend stores/hooks"]
   - Socket.io configured with WebSocket and polling fallbacks for reliability.
 - Rate limiting:
   - Validators.app requests are rate-limited to respect upstream quotas.
-
-[No sources needed since this section provides general guidance]
+- Centralized WebSocket management:
+  - Single point of control for connection lifecycle and event broadcasting.
+  - Room-based messaging reduces unnecessary client notifications.
 
 ## Troubleshooting Guide
 - Redis connectivity:
@@ -447,6 +533,10 @@ WS["websocket/index.js"] --> FE["frontend stores/hooks"]
   - Verify Socket.io server is initialized and emitting events.
   - Ensure frontend connects to the correct path and handles connection/disconnection events.
 
+- Cache key validation:
+  - Verify cache keys match expected patterns in cacheKeys.js.
+  - Check TTL values for appropriate cache duration.
+
 **Section sources**
 - [redis.js:16-68](file://backend/src/models/redis.js#L16-L68)
 - [redis.js:59-61](file://backend/src/models/redis.js#L59-L61)
@@ -457,4 +547,4 @@ WS["websocket/index.js"] --> FE["frontend stores/hooks"]
 - [useWebSocket.js:11-19](file://frontend/src/hooks/useWebSocket.js#L11-L19)
 
 ## Conclusion
-InfraWatch’s real-time architecture combines scheduled data collection, robust external API integrations, resilient persistence, and efficient caching with a reliable WebSocket broadcast layer. The frontend consumes live events through a simple hook and Zustand stores, enabling responsive dashboards. The design emphasizes resilience, scalability, and maintainability through modular services, centralized configuration, and graceful error handling.
+InfraWatch's real-time architecture combines scheduled data collection, robust external API integrations, resilient persistence, and efficient caching with a reliable WebSocket broadcast layer. The enhanced centralized WebSocket communication provides improved connection management and event routing capabilities. The expanded Redis caching strategies offer more granular control over data retention and access patterns. The improved data normalization ensures consistent data formats across all components. The frontend consumes live events through a simple hook and Zustand stores, enabling responsive dashboards. The design emphasizes resilience, scalability, and maintainability through modular services, centralized configuration, and graceful error handling.

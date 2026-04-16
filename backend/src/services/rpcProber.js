@@ -194,9 +194,10 @@ function percentile(arr, p) {
   const upper = Math.ceil(index);
   const weight = index - lower;
   
-  if (upper >= sorted.length) return sorted[lower];
+  if (upper >= sorted.length) return Math.round(sorted[lower]);
   
-  return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+  const result = sorted[lower] * (1 - weight) + sorted[upper] * weight;
+  return Math.round(result);
 }
 
 /**
@@ -234,7 +235,7 @@ function calculateRollingStats(providerName, checks) {
     ? unhealthyChecks[unhealthyChecks.length - 1].timestamp
     : null;
 
-  const currentLatency = checks[checks.length - 1].latencyMs;
+  const currentLatency = Math.round(checks[checks.length - 1].latencyMs);
 
   return {
     providerName,

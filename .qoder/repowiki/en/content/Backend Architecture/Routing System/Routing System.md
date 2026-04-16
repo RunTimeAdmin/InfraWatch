@@ -9,6 +9,8 @@
 - [routes/validators.js](file://backend/src/routes/validators.js)
 - [routes/epoch.js](file://backend/src/routes/epoch.js)
 - [routes/alerts.js](file://backend/src/routes/alerts.js)
+- [routes/bags.js](file://backend/src/routes/bags.js)
+- [websocket/index.js](file://backend/src/websocket/index.js)
 - [middleware/errorHandler.js](file://backend/src/middleware/errorHandler.js)
 - [models/queries.js](file://backend/src/models/queries.js)
 - [models/cacheKeys.js](file://backend/src/models/cacheKeys.js)
@@ -16,9 +18,18 @@
 - [services/rpcProber.js](file://backend/src/services/rpcProber.js)
 - [services/validatorsApp.js](file://backend/src/services/validatorsApp.js)
 - [services/solanaRpc.js](file://backend/src/services/solanaRpc.js)
+- [services/bagsApi.js](file://backend/src/services/bagsApi.js)
 - [config/index.js](file://backend/src/config/index.js)
 - [package.json](file://backend/package.json)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added comprehensive documentation for new Bags routes providing integration with Bags FM API
+- Enhanced Network Routes documentation to reflect improved camelCase field name handling
+- Updated WebSocket architecture documentation to reflect centralized initialization
+- Added new Bags ecosystem endpoints for token launches, pools, and trading quotes
+- Expanded route composition patterns to include the new Bags domain
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -32,10 +43,10 @@
 9. [Conclusion](#conclusion)
 
 ## Introduction
-This document describes the InfraWatch routing system built with Express. It explains the modular router architecture, route organization by domain, and the endpoint structure for network, RPC, validators, epoch, and alerts. It also documents middleware usage, parameter validation, error handling, and how routes integrate with the service and data layers.
+This document describes the InfraWatch routing system built with Express. It explains the modular router architecture, route organization by domain, and the endpoint structure for network, RPC, validators, epoch, alerts, and the newly added Bags ecosystem routes. It also documents middleware usage, parameter validation, error handling, and how routes integrate with the service and data layers.
 
 ## Project Structure
-The backend exposes a single API base path and mounts sub-routers grouped by domain. Each route file encapsulates endpoints for its domain and delegates data access to services and the data layer.
+The backend exposes a single API base path and mounts sub-routers grouped by domain. Each route file encapsulates endpoints for its domain and delegates data access to services and the data layer. The system now includes a comprehensive Bags ecosystem integration alongside traditional network monitoring capabilities.
 
 ```mermaid
 graph TB
@@ -45,54 +56,62 @@ B --> D["RPC Routes<br/>routes/rpc.js"]
 B --> E["Validators Routes<br/>routes/validators.js"]
 B --> F["Epoch Routes<br/>routes/epoch.js"]
 B --> G["Alerts Routes<br/>routes/alerts.js"]
-C --> H["Queries (DB)<br/>models/queries.js"]
-C --> I["Redis Cache<br/>models/redis.js"]
-D --> H
+B --> H["Bags Routes<br/>routes/bags.js"]
+C --> I["Queries (DB)<br/>models/queries.js"]
+C --> J["Redis Cache<br/>models/redis.js"]
 D --> I
-D --> J["RPC Prober<br/>services/rpcProber.js"]
-E --> H
+D --> J
+D --> K["RPC Prober<br/>services/rpcProber.js"]
 E --> I
-E --> K["Validators.app Client<br/>services/validatorsApp.js"]
-F --> I
-F --> L["Solana RPC Client<br/>services/solanaRpc.js"]
-G --> H
+E --> J
+E --> L["Validators.app Client<br/>services/validatorsApp.js"]
+F --> J
+F --> M["Solana RPC Client<br/>services/solanaRpc.js"]
+G --> I
+H --> N["Bags API Client<br/>services/bagsApi.js"]
+H --> J
 ```
 
 **Diagram sources**
 - [server.js:71-72](file://backend/server.js#L71-L72)
-- [routes/index.js:16-21](file://backend/src/routes/index.js#L16-L21)
-- [routes/network.js:1-135](file://backend/src/routes/network.js#L1-L135)
+- [routes/index.js:16-24](file://backend/src/routes/index.js#L16-L24)
+- [routes/network.js:1-136](file://backend/src/routes/network.js#L1-L136)
 - [routes/rpc.js:1-135](file://backend/src/routes/rpc.js#L1-L135)
 - [routes/validators.js:1-112](file://backend/src/routes/validators.js#L1-L112)
 - [routes/epoch.js:1-62](file://backend/src/routes/epoch.js#L1-L62)
 - [routes/alerts.js:1-46](file://backend/src/routes/alerts.js#L1-L46)
+- [routes/bags.js:1-202](file://backend/src/routes/bags.js#L1-L202)
 - [models/queries.js:1-200](file://backend/src/models/queries.js#L1-L200)
 - [models/redis.js:1-161](file://backend/src/models/redis.js#L1-L161)
 - [services/rpcProber.js:1-200](file://backend/src/services/rpcProber.js#L1-L200)
 - [services/validatorsApp.js:1-200](file://backend/src/services/validatorsApp.js#L1-L200)
 - [services/solanaRpc.js:1-200](file://backend/src/services/solanaRpc.js#L1-L200)
+- [services/bagsApi.js:1-200](file://backend/src/services/bagsApi.js#L1-L200)
 
 **Section sources**
 - [server.js:71-79](file://backend/server.js#L71-L79)
-- [routes/index.js:16-21](file://backend/src/routes/index.js#L16-L21)
+- [routes/index.js:16-24](file://backend/src/routes/index.js#L16-L24)
 
 ## Core Components
 - Express app and middleware pipeline: Helmet, compression, CORS, body parsing, health check, global error handler, and 404 handling.
-- Routes aggregator mounts domain-specific routers under /api.
+- Routes aggregator mounts domain-specific routers under /api, including the new Bags ecosystem routes.
 - Domain routers implement endpoints with cache-first patterns, parameter validation, and error propagation to the global handler.
-- Services encapsulate external integrations (RPC probing, Validators.app, Solana RPC) and internal data access via queries.
+- Services encapsulate external integrations (RPC probing, Validators.app, Solana RPC, Bags API) and internal data access via queries.
+- Centralized WebSocket initialization provides real-time communication capabilities across all routes.
 
 **Section sources**
 - [server.js:52-79](file://backend/server.js#L52-L79)
-- [routes/index.js:16-21](file://backend/src/routes/index.js#L16-L21)
+- [routes/index.js:16-24](file://backend/src/routes/index.js#L16-L24)
+- [websocket/index.js:13-33](file://backend/src/websocket/index.js#L13-L33)
 - [middleware/errorHandler.js:44-127](file://backend/src/middleware/errorHandler.js#L44-L127)
 
 ## Architecture Overview
-The routing system follows a modular, layered architecture:
-- Entry point initializes middleware and routes.
-- Sub-routers define domain endpoints.
-- Endpoints call services and the data layer.
+The routing system follows a modular, layered architecture with enhanced real-time capabilities:
+- Entry point initializes middleware, WebSocket server, and routes.
+- Sub-routers define domain endpoints including the new Bags ecosystem.
+- Endpoints call services and the data layer with improved field name handling.
 - Redis cache is used for fast reads; database is used as fallback.
+- Centralized WebSocket provides real-time updates for network and RPC data.
 - Global error handler standardizes error responses.
 
 ```mermaid
@@ -100,38 +119,39 @@ sequenceDiagram
 participant Client as "Client"
 participant App as "Express App<br/>server.js"
 participant Router as "Routes Aggregator<br/>routes/index.js"
-participant Net as "Network Router<br/>routes/network.js"
-participant Q as "Queries<br/>models/queries.js"
+participant Bags as "Bags Router<br/>routes/bags.js"
+participant BAPI as "Bags API<br/>services/bagsApi.js"
 participant R as "Redis<br/>models/redis.js"
-Client->>App : GET /api/network/current
-App->>Router : route to /network
-Router->>Net : dispatch GET /current
-Net->>R : getCache(NETWORK_CURRENT)
+Client->>App : GET /api/bags/pools?onlyMigrated=true
+App->>Router : route to /bags
+Router->>Bags : dispatch GET /pools
+Bags->>R : getCache(bags : pools : true)
 alt cache hit
-R-->>Net : cached data
-Net-->>Client : JSON response
+R-->>Bags : cached pools
+Bags-->>Client : JSON with success flag and data
 else cache miss
-Net->>Q : getLatestNetworkSnapshot()
-Q-->>Net : snapshot
-Net-->>Client : JSON response
+Bags->>BAPI : getBagsPools(true)
+BAPI-->>Bags : pools data
+Bags->>R : setCache(bags : pools : true, pools, 60s)
+Bags-->>Client : JSON with success flag and data
 end
 ```
 
 **Diagram sources**
 - [server.js:71-72](file://backend/server.js#L71-L72)
-- [routes/index.js:17](file://backend/src/routes/index.js#L17)
-- [routes/network.js:17-79](file://backend/src/routes/network.js#L17-L79)
+- [routes/index.js:23](file://backend/src/routes/index.js#L23)
+- [routes/bags.js:20-68](file://backend/src/routes/bags.js#L20-L68)
+- [services/bagsApi.js:49-81](file://backend/src/services/bagsApi.js#L49-L81)
 - [models/redis.js:75-90](file://backend/src/models/redis.js#L75-L90)
-- [models/queries.js:54-62](file://backend/src/models/queries.js#L54-L62)
 
 ## Detailed Component Analysis
 
 ### Network Routes
 Endpoints:
 - GET /api/network/current
-  - Purpose: Returns current network status.
+  - Purpose: Returns current network status with enhanced field name handling.
   - Cache-first: Attempts Redis; falls back to database.
-  - Validation: None.
+  - Field transformation: Converts between Redis camelCase format and standardized response format.
   - Authentication: Not required.
   - Response: JSON with status, TPS, slot metrics, epoch info, counts, and timestamp.
   - Error handling: 503 on startup/unavailable; global handler for unexpected errors.
@@ -144,11 +164,14 @@ Endpoints:
   - Response: Array of snapshots.
   - Error handling: Returns empty array on DB failure; logs cache failures as warnings.
 
+**Updated** Enhanced field name handling to support both Redis camelCase format and database snake_case format, ensuring backward compatibility.
+
 ```mermaid
 flowchart TD
 Start(["GET /api/network/current"]) --> TryCache["Try Redis cache"]
 TryCache --> CacheHit{"Cache hit?"}
-CacheHit --> |Yes| ReturnCached["Return cached JSON"]
+CacheHit --> |Yes| TransformFields["Transform camelCase to standardized format"]
+TransformFields --> ReturnCached["Return transformed JSON"]
 CacheHit --> |No| QueryDB["Query latest snapshot"]
 QueryDB --> DBSuccess{"DB success?"}
 DBSuccess --> |No| Return503["Return 503 JSON"]
@@ -159,13 +182,13 @@ Return503 --> End
 ```
 
 **Diagram sources**
-- [routes/network.js:17-79](file://backend/src/routes/network.js#L17-L79)
+- [routes/network.js:17-80](file://backend/src/routes/network.js#L17-L80)
 - [models/redis.js:75-90](file://backend/src/models/redis.js#L75-L90)
 - [models/queries.js:54-62](file://backend/src/models/queries.js#L54-L62)
 
 **Section sources**
-- [routes/network.js:17-79](file://backend/src/routes/network.js#L17-L79)
-- [routes/network.js:85-132](file://backend/src/routes/network.js#L85-L132)
+- [routes/network.js:17-80](file://backend/src/routes/network.js#L17-L80)
+- [routes/network.js:86-133](file://backend/src/routes/network.js#L86-L133)
 - [models/cacheKeys.js:8-11](file://backend/src/models/cacheKeys.js#L8-L11)
 - [models/redis.js:75-112](file://backend/src/models/redis.js#L75-L112)
 
@@ -231,7 +254,7 @@ Endpoints:
   - Error handling: Returns empty array on DB failure; global handler for unexpected errors.
 
 - GET /api/validators/:votePubkey
-  - Purpose: Returns a single validator’s details.
+  - Purpose: Returns a single validator's details.
   - Validation: Requires votePubkey parameter.
   - Priority: Try Redis; then Validators.app; finally database.
   - Response: Validator object.
@@ -321,32 +344,86 @@ Endpoint:
 - [routes/alerts.js:14-43](file://backend/src/routes/alerts.js#L14-L43)
 - [models/queries.js:1-200](file://backend/src/models/queries.js#L1-L200)
 
+### Bags Routes
+**New** Comprehensive Bags ecosystem integration providing access to token launch data, liquidity pools, and trading quotes.
+
+Endpoints:
+- GET /api/bags/pools?onlyMigrated=true|false
+  - Purpose: Returns Bags ecosystem liquidity pools with optional migration filtering.
+  - Cache-first: Attempts Redis with dynamic cache key based on filter; falls back to Bags API.
+  - TTL: 60 seconds for pool data.
+  - Response: JSON with success flag, source indicator, and pool data array.
+  - Error handling: Returns 503 with service unavailable message when Bags API is not configured.
+
+- GET /api/bags/launches
+  - Purpose: Returns token launch feed from Bags FM.
+  - Cache-first: Attempts Redis; falls back to Bags API.
+  - TTL: 60 seconds for launch data.
+  - Response: JSON with success flag, source indicator, and launch data array.
+  - Error handling: Returns 503 with service unavailable message when Bags API is not configured.
+
+- GET /api/bags/fees/:tokenMint
+  - Purpose: Returns lifetime fees for a specific token.
+  - No caching: Always fetches fresh data from Bags API.
+  - Validation: Requires tokenMint parameter.
+  - Response: JSON with success flag, token mint address, and lifetime fees in lamports.
+  - Error handling: Returns 503 with service unavailable message when Bags API is not configured.
+
+- GET /api/bags/quote
+  - Purpose: Returns trading quote for token swaps.
+  - No caching: Quotes are time-sensitive and fetched fresh each request.
+  - Validation: Requires inputMint, outputMint, and amount parameters.
+  - Response: JSON with success flag and quote object containing trade details.
+  - Error handling: Returns 503 with service unavailable message when Bags API is not configured.
+
+**Section sources**
+- [routes/bags.js:15-202](file://backend/src/routes/bags.js#L15-L202)
+- [services/bagsApi.js:13-199](file://backend/src/services/bagsApi.js#L13-L199)
+
+### WebSocket Integration
+**Updated** Centralized WebSocket initialization provides real-time updates across all routes.
+
+- Centralized setup: WebSocket server created in server.js and passed to all components.
+- Real-time events: Network updates, RPC health checks, and alerts broadcast to connected clients.
+- Connection management: Tracks connected clients and handles disconnections gracefully.
+- Broadcasting: Supports both global broadcasts and room-specific messaging.
+
+**Section sources**
+- [server.js:39-81](file://backend/server.js#L39-L81)
+- [websocket/index.js:13-80](file://backend/src/websocket/index.js#L13-L80)
+- [jobs/criticalPoller.js:110-113](file://backend/src/jobs/criticalPoller.js#L110-L113)
+- [jobs/routinePoller.js:110-112](file://backend/src/jobs/routinePoller.js#L110-L112)
+
 ### Route Composition and Nesting
-- The routes aggregator mounts sub-routers at /api/network, /api/rpc, /api/validators, /api/epoch, and /api/alerts.
+- The routes aggregator mounts sub-routers at /api/network, /api/rpc, /api/validators, /api/epoch, /api/alerts, and /api/bags.
 - Nested patterns:
   - RPC: /:provider/history uses a path parameter.
   - Validators: /:votePubkey uses a path parameter.
+  - Bags: /:tokenMint uses a path parameter for fee queries.
 - Route composition:
   - Each router composes service and data-layer calls.
   - Middleware runs before route handlers.
+  - WebSocket integration enables real-time updates.
 
 **Section sources**
-- [routes/index.js:16-21](file://backend/src/routes/index.js#L16-L21)
+- [routes/index.js:16-24](file://backend/src/routes/index.js#L16-L24)
 - [routes/rpc.js:94](file://backend/src/routes/rpc.js#L94)
 - [routes/validators.js:54](file://backend/src/routes/validators.js#L54)
+- [routes/bags.js:130](file://backend/src/routes/bags.js#L130)
 
 ## Dependency Analysis
 - Express app depends on:
-  - Routes aggregator.
+  - Routes aggregator including the new Bags routes.
   - Global error handler and not-found handler.
-  - WebSocket setup.
+  - Centralized WebSocket setup.
 - Routes depend on:
   - Queries for database access.
   - Redis for caching.
-  - Services for external integrations.
+  - Services for external integrations including the new Bags API client.
 - Services depend on:
   - Configuration for endpoints and keys.
   - External APIs and Solana web3 connection.
+  - WebSocket instance for real-time communication.
 
 ```mermaid
 graph LR
@@ -356,6 +433,7 @@ RoutesIdx --> RPC["routes/rpc.js"]
 RoutesIdx --> Val["routes/validators.js"]
 RoutesIdx --> Epoch["routes/epoch.js"]
 RoutesIdx --> Alerts["routes/alerts.js"]
+RoutesIdx --> Bags["routes/bags.js"]
 Net --> Q["models/queries.js"]
 Net --> R["models/redis.js"]
 RPC --> Q
@@ -367,33 +445,43 @@ Val --> VApp["services/validatorsApp.js"]
 Epoch --> R
 Epoch --> SRPC["services/solanaRpc.js"]
 Alerts --> Q
+Bags --> BAPI["services/bagsApi.js"]
+Bags --> R
 ```
 
 **Diagram sources**
 - [server.js:23-27](file://backend/server.js#L23-L27)
-- [routes/index.js:10-14](file://backend/src/routes/index.js#L10-L14)
+- [routes/index.js:10-15](file://backend/src/routes/index.js#L10-L15)
 - [routes/network.js:8-10](file://backend/src/routes/network.js#L8-L10)
 - [routes/rpc.js:8-11](file://backend/src/routes/rpc.js#L8-L11)
 - [routes/validators.js:8-11](file://backend/src/routes/validators.js#L8-L11)
 - [routes/epoch.js:8-10](file://backend/src/routes/epoch.js#L8-L10)
 - [routes/alerts.js:8](file://backend/src/routes/alerts.js#L8)
+- [routes/bags.js:8](file://backend/src/routes/bags.js#L8)
 
 **Section sources**
 - [server.js:23-27](file://backend/server.js#L23-L27)
-- [routes/index.js:10-14](file://backend/src/routes/index.js#L10-L14)
+- [routes/index.js:10-15](file://backend/src/routes/index.js#L10-L15)
 
 ## Performance Considerations
 - Caching strategy:
   - Redis cache keys are centralized and TTLs are tuned per domain.
   - Cache-first reads reduce database and external API load.
+  - Bags routes use 60-second TTL for frequently changing data.
 - Parameter validation:
   - Range parameters validated to avoid invalid queries.
   - Limits clamped to safe ranges to prevent heavy loads.
+  - Bags routes validate required parameters for API calls.
 - Graceful degradation:
   - On Redis failure, routes fall back to database or external services.
   - On DB failure, routes often return empty arrays or minimal responses.
+  - Bags routes return 503 when API is not configured.
 - External service reliability:
   - RPC prober and Validators.app clients include timeouts and rate limiting.
+  - Bags API client includes proper error handling and timeouts.
+- Real-time communication:
+  - Centralized WebSocket reduces overhead and improves scalability.
+  - Event broadcasting optimized for efficient client updates.
 - Compression and security:
   - Compression and Helmet applied at the app level to optimize transport and security.
 
@@ -403,9 +491,11 @@ Alerts --> Q
 - [routes/rpc.js:99-106](file://backend/src/routes/rpc.js#L99-L106)
 - [routes/validators.js:19-20](file://backend/src/routes/validators.js#L19-L20)
 - [routes/alerts.js:16-17](file://backend/src/routes/alerts.js#L16-L17)
+- [routes/bags.js:12-13](file://backend/src/routes/bags.js#L12-L13)
 - [models/redis.js:75-112](file://backend/src/models/redis.js#L75-L112)
 - [services/rpcProber.js:75-134](file://backend/src/services/rpcProber.js#L75-L134)
 - [services/validatorsApp.js:115-149](file://backend/src/services/validatorsApp.js#L115-L149)
+- [services/bagsApi.js:14-18](file://backend/src/services/bagsApi.js#L14-L18)
 - [server.js:52-59](file://backend/server.js#L52-L59)
 
 ## Troubleshooting Guide
@@ -415,11 +505,14 @@ Alerts --> Q
 - Error handling:
   - Global handler standardizes responses and logs details.
   - Known error classes: validation, not found, unauthorized, forbidden.
+  - Bags routes return 503 when API is not configured.
 - Common issues:
   - Redis unavailable: routes continue with DB fallback; cache writes are non-fatal.
   - Database unavailable: routes return empty arrays or 503 where appropriate.
   - Missing parameters: routes return 400 with validation messages.
   - Unknown routes: 404 handled centrally.
+  - Bags API not configured: routes return service unavailable messages.
+  - WebSocket connection issues: centralized setup handles gracefully with logging.
 
 **Section sources**
 - [server.js:62-69](file://backend/server.js#L62-L69)
@@ -429,6 +522,8 @@ Alerts --> Q
 - [routes/rpc.js:100-106](file://backend/src/routes/rpc.js#L100-L106)
 - [routes/network.js:114-117](file://backend/src/routes/network.js#L114-L117)
 - [routes/alerts.js:22-25](file://backend/src/routes/alerts.js#L22-L25)
+- [routes/bags.js:45-50](file://backend/src/routes/bags.js#L45-L50)
+- [websocket/index.js:16-30](file://backend/src/websocket/index.js#L16-L30)
 
 ## Conclusion
-The InfraWatch routing system is modular, resilient, and performance-conscious. Each domain router encapsulates its endpoints, enforces parameter validation, and leverages Redis caching with robust database and external service fallbacks. The global error handler ensures consistent error responses, while the app-level middleware provides security and performance enhancements. This design supports scalable growth and maintainability across network, RPC, validators, epoch, and alerts domains.
+The InfraWatch routing system is modular, resilient, and performance-conscious with enhanced real-time capabilities. Each domain router encapsulates its endpoints, enforces parameter validation, and leverages Redis caching with robust database and external service fallbacks. The addition of Bags ecosystem routes expands the platform's functionality to include token launch data and trading insights. Centralized WebSocket initialization provides efficient real-time updates across all routes. The global error handler ensures consistent error responses, while the app-level middleware provides security and performance enhancements. This design supports scalable growth and maintainability across network, RPC, validators, epoch, alerts, and the new Bags ecosystem domains.

@@ -15,7 +15,21 @@
 - [routinePoller.js](file://backend/src/jobs/routinePoller.js)
 - [errorHandler.js](file://backend/src/middleware/errorHandler.js)
 - [index.js](file://backend/src/websocket/index.js)
+- [nginx-infrawatch.conf](file://deploy/nginx-infrawatch.conf)
+- [deploy.sh](file://deploy.sh)
+- [infrawatch_vps_install.sh](file://infrawatch_vps_install.sh)
+- [vite.config.js](file://frontend/vite.config.js)
+- [api.js](file://frontend/src/services/api.js)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added comprehensive deployment infrastructure documentation with automated deployment scripts
+- Documented Nginx configuration for production reverse proxy setup
+- Enhanced environment variable management and configuration loading
+- Added production deployment strategies with PM2 process management
+- Included frontend build and deployment automation
+- Updated monitoring and health check procedures for production environments
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -24,67 +38,73 @@
 4. [Architecture Overview](#architecture-overview)
 5. [Detailed Component Analysis](#detailed-component-analysis)
 6. [Dependency Analysis](#dependency-analysis)
-7. [Performance Considerations](#performance-considerations)
-8. [Troubleshooting Guide](#troubleshooting-guide)
-9. [Conclusion](#conclusion)
-10. [Appendices](#appendices)
+7. [Production Deployment Infrastructure](#production-deployment-infrastructure)
+8. [Environment Variable Management](#environment-variable-management)
+9. [Reverse Proxy Configuration](#reverse-proxy-configuration)
+10. [Automated Deployment Scripts](#automated-deployment-scripts)
+11. [Frontend Build and Distribution](#frontend-build-and-distribution)
+12. [Production Deployment Strategies](#production-deployment-strategies)
+13. [Monitoring and Health Checks](#monitoring-and-health-checks)
+14. [Performance Considerations](#performance-considerations)
+15. [Troubleshooting Guide](#troubleshooting-guide)
+16. [Conclusion](#conclusion)
+17. [Appendices](#appendices)
 
 ## Introduction
-This document provides comprehensive deployment and maintenance guidance for InfraWatch, focusing on production-grade strategies for containerization, infrastructure provisioning, database and cache operations, monitoring, backups, disaster recovery, and operational runbooks. It synthesizes the backend’s runtime behavior, configuration model, scheduling, persistence, and caching to deliver actionable guidance for reliable operations.
+This document provides comprehensive deployment and maintenance guidance for InfraWatch, focusing on production-grade strategies for containerization, infrastructure provisioning, database and cache operations, monitoring, backups, disaster recovery, and operational runbooks. The system now includes automated deployment scripts, Nginx reverse proxy configuration, and comprehensive environment variable management for production environments.
 
 ## Project Structure
-InfraWatch consists of a Node.js backend built with Express, Socket.io, PostgreSQL via node-pg, and Redis via ioredis. The backend exposes REST API endpoints, runs scheduled jobs, and streams real-time updates via WebSocket. Configuration is environment-driven with sensible defaults.
+InfraWatch consists of a Node.js backend built with Express, Socket.io, PostgreSQL via node-pg, and Redis via ioredis. The backend exposes REST API endpoints, runs scheduled jobs, and streams real-time updates via WebSocket. Configuration is environment-driven with sensible defaults. The deployment infrastructure includes automated scripts for installation and updates, along with Nginx configuration for production reverse proxy setup.
 
 ```mermaid
 graph TB
-subgraph "Backend"
+subgraph "Production Infrastructure"
+Nginx["Nginx Reverse Proxy"]
+PM2["PM2 Process Manager"]
+Backend["Backend Server"]
+Frontend["React Frontend"]
+end
+subgraph "Backend Services"
 S["server.js"]
 CFG["src/config/index.js"]
 RT["src/routes/index.js"]
 WS["src/websocket/index.js"]
 DB["src/models/db.js"]
 RDS["src/models/redis.js"]
-CK["src/models/cacheKeys.js"]
-Q["src/models/queries.js"]
-MP["src/models/migrate.js"]
 CP["src/jobs/criticalPoller.js"]
 RP["src/jobs/routinePoller.js"]
 EH["src/middleware/errorHandler.js"]
 end
-S --> CFG
-S --> RT
-S --> WS
-S --> DB
-S --> RDS
-S --> CP
-S --> RP
-S --> EH
-CP --> Q
-CP --> RDS
-RP --> Q
-RP --> RDS
-Q --> DB
-RDS --> CK
+subgraph "Deployment Scripts"
+Deploy["deploy.sh"]
+Install["infrawatch_vps_install.sh"]
+NginxConf["nginx-infrawatch.conf"]
+end
+Nginx --> PM2
+PM2 --> Backend
+Backend --> DB
+Backend --> RDS
+Backend --> CP
+Backend --> RP
+Frontend --> Nginx
+Deploy --> PM2
+Install --> Nginx
+Install --> PM2
 ```
 
 **Diagram sources**
 - [server.js:1-128](file://backend/server.js#L1-L128)
-- [index.js:1-68](file://backend/src/config/index.js#L1-L68)
-- [index.js:1-24](file://backend/src/routes/index.js#L1-L24)
-- [index.js:1-81](file://backend/src/websocket/index.js#L1-L81)
-- [db.js:1-98](file://backend/src/models/db.js#L1-L98)
-- [redis.js:1-161](file://backend/src/models/redis.js#L1-L161)
-- [cacheKeys.js:1-50](file://backend/src/models/cacheKeys.js#L1-L50)
-- [queries.js:1-459](file://backend/src/models/queries.js#L1-L459)
-- [migrate.js:1-160](file://backend/src/models/migrate.js#L1-L160)
-- [criticalPoller.js:1-108](file://backend/src/jobs/criticalPoller.js#L1-L108)
-- [routinePoller.js:1-116](file://backend/src/jobs/routinePoller.js#L1-L116)
-- [errorHandler.js:1-127](file://backend/src/middleware/errorHandler.js#L1-L127)
+- [index.js:1-74](file://backend/src/config/index.js#L1-L74)
+- [deploy.sh:1-30](file://deploy.sh#L1-L30)
+- [infrawatch_vps_install.sh:1-177](file://infrawatch_vps_install.sh#L1-L177)
+- [nginx-infrawatch.conf:1-61](file://deploy/nginx-infrawatch.conf#L1-L61)
 
 **Section sources**
 - [server.js:1-128](file://backend/server.js#L1-L128)
 - [package.json:1-36](file://backend/package.json#L1-L36)
-- [index.js:1-68](file://backend/src/config/index.js#L1-L68)
+- [index.js:1-74](file://backend/src/config/index.js#L1-L74)
+- [deploy.sh:1-30](file://deploy.sh#L1-L30)
+- [infrawatch_vps_install.sh:1-177](file://infrawatch_vps_install.sh#L1-L177)
 
 ## Core Components
 - Express server with Helmet, compression, and CORS middleware, plus a health endpoint.
@@ -94,10 +114,12 @@ RDS --> CK
 - Scheduled jobs for critical (every 30s) and routine (every 5min) data collection and persistence.
 - Centralized configuration loader supporting environment variables and defaults.
 - Error handling middleware with typed error classes and production-safe responses.
+- Automated deployment infrastructure with PM2 process management.
+- Nginx reverse proxy configuration for production deployment.
 
 **Section sources**
 - [server.js:33-107](file://backend/server.js#L33-L107)
-- [index.js:15-65](file://backend/src/config/index.js#L15-L65)
+- [index.js:15-74](file://backend/src/config/index.js#L15-L74)
 - [db.js:15-47](file://backend/src/models/db.js#L15-L47)
 - [redis.js:16-68](file://backend/src/models/redis.js#L16-L68)
 - [criticalPoller.js:21-103](file://backend/src/jobs/criticalPoller.js#L21-L103)
@@ -105,37 +127,30 @@ RDS --> CK
 - [errorHandler.js:44-109](file://backend/src/middleware/errorHandler.js#L44-L109)
 
 ## Architecture Overview
-The backend initializes configuration, sets up middleware and routes, connects to PostgreSQL and Redis, starts scheduled jobs, and exposes a health endpoint. WebSocket connections are tracked and used to broadcast real-time updates.
+The backend initializes configuration, sets up middleware and routes, connects to PostgreSQL and Redis, starts scheduled jobs, and exposes a health endpoint. WebSocket connections are tracked and used to broadcast real-time updates. The deployment infrastructure includes automated scripts for installation and updates, with Nginx serving as a reverse proxy for both the React frontend and API endpoints.
 
 ```mermaid
 sequenceDiagram
-participant Proc as "Process"
+participant User as "Client Browser"
+participant Nginx as "Nginx Reverse Proxy"
+participant PM2 as "PM2 Process Manager"
 participant Server as "Express Server"
-participant Cfg as "Config Loader"
 participant DB as "PostgreSQL Pool"
 participant Rds as "Redis Client"
-participant CronC as "Critical Poller"
-participant CronR as "Routine Poller"
-Proc->>Server : "Start server"
-Server->>Cfg : "Load env vars and defaults"
-Server->>DB : "initDatabase()"
-Server->>Rds : "initRedis()"
-Server->>CronC : "startCriticalPoller(io)"
-Server->>CronR : "startRoutinePoller(io)"
-CronC->>DB : "insertNetworkSnapshot(), insertRpcHealthCheck()"
-CronC->>Rds : "setCache(network : current, rpc : latest)"
-CronC-->>Server : "emit('network : update'), emit('rpc : update')"
-CronR->>DB : "upsertValidator(), insertValidatorSnapshot(), insertAlert()"
-CronR->>Rds : "setCache(validators : top100, epoch : info)"
-CronR-->>Server : "emit('alert : new') if applicable"
+User->>Nginx : "HTTP Request"
+Nginx->>PM2 : "Proxy to backend"
+PM2->>Server : "Route to /api/ or /socket.io/"
+Server->>DB : "Database operations"
+Server->>Rds : "Cache operations"
+Server-->>PM2 : "Response"
+PM2-->>Nginx : "HTTP Response"
+Nginx-->>User : "Final Response"
 ```
 
 **Diagram sources**
-- [server.js:84-107](file://backend/server.js#L84-L107)
-- [criticalPoller.js:48-92](file://backend/src/jobs/criticalPoller.js#L48-L92)
-- [routinePoller.js:37-100](file://backend/src/jobs/routinePoller.js#L37-L100)
-- [db.js:15-47](file://backend/src/models/db.js#L15-L47)
-- [redis.js:16-68](file://backend/src/models/redis.js#L16-L68)
+- [nginx-infrawatch.conf:11-33](file://deploy/nginx-infrawatch.conf#L11-L33)
+- [server.js:61-79](file://backend/server.js#L61-L79)
+- [deploy.sh:24-26](file://deploy.sh#L24-L26)
 
 ## Detailed Component Analysis
 
@@ -143,14 +158,18 @@ CronR-->>Server : "emit('alert : new') if applicable"
 - Centralized configuration loads environment variables with defaults for ports, Solana RPC endpoints, validators.app API, database URL, Redis URL, polling intervals, and CORS origin.
 - Supports optional Helius API key to construct a Helius RPC URL.
 - Graceful degradation when database or Redis are not configured.
+- Automatic .env file loading with fallback to environment variables.
+
+**Updated** Enhanced with comprehensive environment variable management including API keys and service URLs.
 
 Operational guidance:
 - Define environment variables for production (e.g., PORT, NODE_ENV, DATABASE_URL, REDIS_URL, SOLANA_RPC_URL, HELIUS_API_KEY, VALIDATORS_APP_API_KEY).
 - Keep CORS_ORIGIN aligned with the frontend origin.
 - Use separate environment files for staging and production.
+- Store sensitive API keys in secure secrets management systems.
 
 **Section sources**
-- [index.js:8-65](file://backend/src/config/index.js#L8-L65)
+- [index.js:8-74](file://backend/src/config/index.js#L8-L74)
 
 ### Database Initialization and Operations
 - Uses a pooled PostgreSQL client with connection limits and timeouts.
@@ -276,20 +295,320 @@ Routine --> Redis
 - [package.json:22-34](file://backend/package.json#L22-L34)
 - [server.js:6-27](file://backend/server.js#L6-L27)
 
+## Production Deployment Infrastructure
+
+### Automated Deployment Scripts
+The system includes comprehensive deployment automation through shell scripts that handle the complete deployment lifecycle:
+
+**Installation Script (`infrawatch_vps_install.sh`)**:
+- Node.js version checking and automatic upgrade to v20+
+- Certbot installation for SSL certificates
+- Repository cloning and dependency installation
+- Environment configuration creation
+- Frontend build process
+- PM2 process management setup
+- Nginx configuration deployment
+- Comprehensive post-installation instructions
+
+**Deployment Script (`deploy.sh`)**:
+- Git pull from origin main branch
+- Backend dependency installation with production flags
+- Frontend build process
+- PM2 restart for seamless deployment
+
+**Section sources**
+- [infrawatch_vps_install.sh:1-177](file://infrawatch_vps_install.sh#L1-L177)
+- [deploy.sh:1-30](file://deploy.sh#L1-L30)
+
+### Nginx Reverse Proxy Configuration
+The Nginx configuration serves as a production-ready reverse proxy that handles both the React frontend and API backend:
+
+**Key Features**:
+- Serves React SPA frontend from `/var/www/infrawatch/frontend/dist`
+- Proxies `/api/` requests to backend on port 3001
+- Handles WebSocket connections for Socket.io with proper upgrade headers
+- Implements security headers and Gzip compression
+- Configures static asset caching with immutable caching policy
+- Provides SPA routing fallback for client-side navigation
+
+**Section sources**
+- [nginx-infrawatch.conf:1-61](file://deploy/nginx-infrawatch.conf#L1-L61)
+
+### PM2 Process Management
+The deployment infrastructure uses PM2 for production process management:
+
+- Automatic application startup and restart on failures
+- Process monitoring and health checks
+- Log management and rotation
+- Seamless deployment with zero downtime
+- Environment-specific configuration management
+
+**Section sources**
+- [infrawatch_vps_install.sh:82-87](file://infrawatch_vps_install.sh#L82-L87)
+- [deploy.sh:24-26](file://deploy.sh#L24-L26)
+
+## Environment Variable Management
+
+### Configuration Loading Strategy
+The system implements a robust environment variable management system:
+
+**File Priority**:
+1. `.env` file in backend root directory
+2. System environment variables
+3. Default values in configuration module
+
+**Supported Variables**:
+- Server configuration: PORT, NODE_ENV
+- Solana configuration: SOLANA_RPC_URL, HELIUS_API_KEY, HELIUS_RPC_URL
+- External API configuration: VALIDATORS_APP_API_KEY, VALIDATORS_APP_BASE_URL, BAGS_API_KEY, BAGS_API_BASE_URL
+- Database configuration: DATABASE_URL
+- Redis configuration: REDIS_URL
+- Polling intervals: CRITICAL_POLL_INTERVAL, ROUTINE_POLL_INTERVAL
+- CORS configuration: CORS_ORIGIN
+
+**Section sources**
+- [index.js:8-74](file://backend/src/config/index.js#L8-L74)
+
+### Production Environment Setup
+**Installation Process**:
+- Automatic .env file creation with essential configuration
+- API key placeholders for secure configuration
+- Separate frontend environment configuration
+- Post-installation API key editing instructions
+
+**Deployment Process**:
+- Environment variables loaded automatically during startup
+- Graceful handling of missing configuration values
+- Fallback to default values for non-critical settings
+
+**Section sources**
+- [infrawatch_vps_install.sh:58-68](file://infrawatch_vps_install.sh#L58-L68)
+- [infrawatch_vps_install.sh:74-78](file://infrawatch_vps_install.sh#L74-L78)
+
+## Reverse Proxy Configuration
+
+### Nginx Server Block Structure
+The Nginx configuration implements a comprehensive reverse proxy setup:
+
+**Server Configuration**:
+- Listens on port 80 for HTTP traffic
+- Server name: `app.infrastructureintel.io`
+- Root directory points to compiled frontend distribution
+
+**API Proxy Configuration**:
+- Location `/api/` proxies to `http://127.0.0.1:3001`
+- Preserves original headers including X-Forwarded-For and X-Forwarded-Proto
+- Maintains connection integrity for API requests
+
+**WebSocket Support**:
+- Dedicated location `/socket.io/` for real-time connections
+- Proper upgrade headers for WebSocket protocol
+- Extended timeout settings (86400 seconds) for long-lived connections
+
+**Security Enhancements**:
+- X-Frame-Options protection (DENY for static assets)
+- X-Content-Type-Options (nosniff)
+- Strict Referrer-Policy configuration
+- Gzip compression for improved performance
+
+**Static Asset Optimization**:
+- One-year caching for JavaScript, CSS, and font files
+- Immutable caching policy for optimized delivery
+- Security-focused header additions
+
+**Section sources**
+- [nginx-infrawatch.conf:5-61](file://deploy/nginx-infrawatch.conf#L5-L61)
+
+## Automated Deployment Scripts
+
+### Installation Workflow
+The installation script (`infrawatch_vps_install.sh`) automates the complete production setup:
+
+**Phase 1: System Preparation**
+- Node.js version verification and automatic upgrade to v20+
+- Certbot installation for SSL certificate management
+- Repository cloning to `/var/www/infrawatch`
+
+**Phase 2: Backend Setup**
+- Backend dependency installation
+- Environment configuration creation with placeholder API keys
+- Database and Redis URL placeholders for secure configuration
+
+**Phase 3: Frontend Build**
+- Frontend dependency installation
+- Environment-specific configuration for production API URL
+- Build process generating optimized distribution files
+
+**Phase 4: Service Management**
+- PM2 process startup with persistent configuration
+- Nginx configuration deployment and validation
+- Comprehensive post-installation instructions and next steps
+
+**Section sources**
+- [infrawatch_vps_install.sh:22-177](file://infrawatch_vps_install.sh#L22-L177)
+
+### Deployment Workflow
+The deployment script (`deploy.sh`) enables rapid production updates:
+
+**Deployment Steps**:
+1. Pull latest code from origin/main branch
+2. Install production dependencies for backend
+3. Build frontend with optimized production settings
+4. Restart backend service via PM2 for seamless deployment
+
+**Operational Benefits**:
+- Zero-downtime deployments through PM2 restart
+- Automated dependency management
+- Consistent build process across environments
+- Simple execution from project root directory
+
+**Section sources**
+- [deploy.sh:1-30](file://deploy.sh#L1-L30)
+
+## Frontend Build and Distribution
+
+### Development vs Production Configuration
+The frontend uses Vite for both development and production builds:
+
+**Development Configuration**:
+- Local proxy configuration for API and WebSocket connections
+- Port 5173 for development server
+- Hot module replacement for fast development iteration
+
+**Production Configuration**:
+- Optimized build with minification and tree-shaking
+- Environment-specific API URL configuration
+- Static asset optimization and caching
+
+**Section sources**
+- [vite.config.js:1-18](file://frontend/vite.config.js#L1-L18)
+- [infrawatch_vps_install.sh:74-78](file://infrawatch_vps_install.sh#L74-L78)
+
+### API Communication Layer
+The frontend implements a centralized API communication layer:
+
+**Configuration**:
+- Base URL derived from `VITE_API_URL` environment variable
+- Timeout configuration for request handling
+- Axios interceptors for request/response processing
+
+**Error Handling**:
+- Comprehensive error logging for failed requests
+- Different handling for various error scenarios
+- User-friendly error reporting
+
+**Section sources**
+- [api.js:1-45](file://frontend/src/services/api.js#L1-L45)
+
+## Production Deployment Strategies
+
+### Containerization Options
+While the current deployment uses traditional server setup, the system is container-ready:
+
+**Container Image Requirements**:
+- Node.js 20+ runtime environment
+- Production dependencies only (optimized for size)
+- Non-root user execution for security
+- Read-only root filesystem with writable logs directory
+
+**Docker Considerations**:
+- Multi-stage build process for optimal image size
+- Health check endpoint integration
+- Environment variable injection
+- Volume mounting for persistent data
+
+### Infrastructure Provisioning
+**Recommended Architecture**:
+- Single instance for development and small-scale production
+- Horizontal scaling with multiple instances behind load balancer
+- Stateful components (database, Redis) in managed cloud services
+- CDN integration for static asset delivery
+
+**Networking Requirements**:
+- Inbound HTTP/HTTPS access restricted to Nginx
+- Outbound HTTPS access to Solana RPC endpoints
+- Internal communication between Nginx and backend on localhost:3001
+- DNS configuration for domain resolution
+
+**Section sources**
+- [package.json:19-21](file://backend/package.json#L19-L21)
+- [nginx-infrawatch.conf:6-7](file://deploy/nginx-infrawatch.conf#L6-L7)
+
+### Secrets Management
+**Production Security**:
+- API keys stored in cloud-native secrets management
+- Environment-specific configuration separation
+- Regular rotation of sensitive credentials
+- Least-privilege access controls
+
+**Configuration Best Practices**:
+- Never commit secrets to version control
+- Use different secrets for development, staging, and production
+- Implement automated secret rotation processes
+- Monitor access to sensitive configuration data
+
+## Monitoring and Health Checks
+
+### Health Endpoint Implementation
+The system provides comprehensive health monitoring capabilities:
+
+**Endpoint Details**:
+- Path: `/api/health`
+- Returns: Status, timestamp, uptime, and environment information
+- Used for Kubernetes liveness and readiness probes
+- Accessible without authentication for monitoring systems
+
+**Integration Points**:
+- PM2 process monitoring
+- Load balancer health checks
+- Kubernetes cluster autoscaling
+- Alerting system integration
+
+**Section sources**
+- [server.js:61-69](file://backend/server.js#L61-L69)
+
+### Performance Monitoring
+**Metrics Collection**:
+- Database pool utilization and query performance
+- Redis connection health and memory usage
+- WebSocket connection counts and error rates
+- API response times and error rates
+- Frontend bundle size and loading performance
+
+**Monitoring Tools**:
+- Application performance monitoring (APM) solutions
+- Database performance monitoring
+- Infrastructure monitoring (CPU, memory, disk)
+- Custom metrics for business logic
+
+### Log Management
+**Logging Strategy**:
+- Structured JSON logging for machine parsing
+- Separate logs for different components (backend, frontend, database)
+- Log aggregation and centralization
+- Retention policies based on compliance requirements
+
+**Log Analysis**:
+- Error rate monitoring and alerting
+- Performance bottleneck identification
+- Security event detection
+- Audit trail maintenance
+
 ## Performance Considerations
 - Database pooling: Tune max connections and timeouts based on observed concurrency and query patterns.
 - Query performance: Use indexes created by migrations for time-series and lookup queries.
 - Cache strategy: Leverage Redis for hot-path reads; monitor hit rates and adjust TTLs.
 - Scheduling cadence: Critical poller runs every 30s; routine poller every 5min. Adjust intervals to balance freshness and load.
 - Middleware: Compression reduces payload sizes; keep CORS minimal to reduce preflight overhead.
-
-[No sources needed since this section provides general guidance]
+- Nginx optimization: Leverage static asset caching and Gzip compression for improved performance.
+- PM2 process management: Optimize worker count and memory limits for optimal resource utilization.
 
 ## Troubleshooting Guide
 Common operational issues and resolutions:
 - Health endpoint returns errors:
   - Verify environment variables and connectivity to database and Redis.
   - Check server logs for initialization warnings.
+  - Validate Nginx proxy configuration and backend connectivity.
 - Database connectivity failures:
   - Confirm DATABASE_URL and network ACLs.
   - Review pool error logs and increase timeouts if needed.
@@ -303,6 +622,14 @@ Common operational issues and resolutions:
   - Logs indicate skipping if a run is still active; investigate slow downstream operations (DB/Redis/API calls).
 - API errors:
   - Use global error middleware responses to diagnose validation, not-found, unauthorized, or forbidden conditions.
+- Nginx configuration issues:
+  - Validate syntax with `nginx -t`
+  - Check access logs for proxy errors
+  - Verify backend service availability on port 3001
+- PM2 process problems:
+  - Check process status with `pm2 status`
+  - Review application logs with `pm2 logs infrawatch-api`
+  - Restart process if needed with `pm2 restart infrawatch-api`
 
 **Section sources**
 - [server.js:89-102](file://backend/server.js#L89-L102)
@@ -311,11 +638,11 @@ Common operational issues and resolutions:
 - [index.js:16-17](file://backend/src/websocket/index.js#L16-L17)
 - [criticalPoller.js:23-27](file://backend/src/jobs/criticalPoller.js#L23-L27)
 - [errorHandler.js:44-109](file://backend/src/middleware/errorHandler.js#L44-L109)
+- [nginx-infrawatch.conf:135](file://deploy/nginx-infrawatch.conf#L135)
+- [infrawatch_vps_install.sh:169-173](file://infrawatch_vps_install.sh#L169-L173)
 
 ## Conclusion
-InfraWatch is designed for production with environment-driven configuration, resilient data stores, scheduled ingestion, and real-time streaming. By following the deployment and maintenance practices outlined here—especially around database and Redis provisioning, cache tuning, monitoring, and operational runbooks—you can achieve reliable, scalable operations in production.
-
-[No sources needed since this section summarizes without analyzing specific files]
+InfraWatch is designed for production with environment-driven configuration, resilient data stores, scheduled ingestion, and real-time streaming. The new deployment infrastructure adds automated deployment scripts, comprehensive Nginx configuration, and robust environment variable management. By following the deployment and maintenance practices outlined here—especially around database and Redis provisioning, cache tuning, monitoring, and operational runbooks—you can achieve reliable, scalable operations in production with automated deployment workflows.
 
 ## Appendices
 
@@ -335,7 +662,7 @@ InfraWatch is designed for production with environment-driven configuration, res
 
 **Section sources**
 - [package.json:6-9](file://backend/package.json#L6-L9)
-- [index.js:28-65](file://backend/src/config/index.js#L28-L65)
+- [index.js:28-74](file://backend/src/config/index.js#L28-L74)
 
 ### B. Infrastructure Requirements
 - Compute:
@@ -378,8 +705,6 @@ InfraWatch is designed for production with environment-driven configuration, res
 - Use OS-level log rotation (e.g., logrotate) to manage stdout/stderr logs.
 - Forward application logs to a centralized logging platform.
 - Retain logs per compliance requirements; purge old entries periodically.
-
-[No sources needed since this section provides general guidance]
 
 ### F. Monitoring Setup and Metrics
 - Health endpoint:
@@ -433,3 +758,38 @@ InfraWatch is designed for production with environment-driven configuration, res
 **Section sources**
 - [db.js:25-30](file://backend/src/models/db.js#L25-L30)
 - [redis.js:27-35](file://backend/src/models/redis.js#L27-L35)
+
+### J. Deployment Automation Reference
+**Installation Script Features**:
+- Automated Node.js version management
+- SSL certificate setup with Certbot
+- Complete environment configuration
+- Frontend build optimization
+- PM2 process management
+- Nginx configuration deployment
+
+**Deployment Script Features**:
+- Git-based deployment workflow
+- Production dependency optimization
+- Frontend build pipeline
+- Seamless service restart
+
+**Section sources**
+- [infrawatch_vps_install.sh:1-177](file://infrawatch_vps_install.sh#L1-L177)
+- [deploy.sh:1-30](file://deploy.sh#L1-L30)
+
+### K. Environment Variable Reference
+**Essential Configuration Variables**:
+- `PORT`: Backend server port (default: 3001)
+- `NODE_ENV`: Environment mode (default: development)
+- `DATABASE_URL`: PostgreSQL connection string
+- `REDIS_URL`: Redis connection string
+- `SOLANA_RPC_URL`: Primary Solana RPC endpoint
+- `HELIUS_API_KEY`: Helius API authentication key
+- `VALIDATORS_APP_API_KEY`: Validators.app API authentication key
+- `CRITICAL_POLL_INTERVAL`: Critical job interval in milliseconds
+- `ROUTINE_POLL_INTERVAL`: Routine job interval in milliseconds
+- `CORS_ORIGIN`: Allowed CORS origins
+
+**Section sources**
+- [index.js:27-71](file://backend/src/config/index.js#L27-L71)

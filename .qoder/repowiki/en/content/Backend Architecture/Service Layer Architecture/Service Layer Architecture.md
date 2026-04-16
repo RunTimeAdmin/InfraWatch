@@ -8,18 +8,28 @@
 - [services/helius.js](file://backend/src/services/helius.js)
 - [services/validatorsApp.js](file://backend/src/services/validatorsApp.js)
 - [services/rpcProber.js](file://backend/src/services/rpcProber.js)
-- [models/queries.js](file://backend/src/models/queries.js)
-- [models/redis.js](file://backend/src/models/redis.js)
-- [models/cacheKeys.js](file://backend/src/models/cacheKeys.js)
+- [services/bagsApi.js](file://backend/src/services/bagsApi.js)
 - [routes/index.js](file://backend/src/routes/index.js)
 - [routes/network.js](file://backend/src/routes/network.js)
 - [routes/rpc.js](file://backend/src/routes/rpc.js)
 - [routes/validators.js](file://backend/src/routes/validators.js)
+- [routes/bags.js](file://backend/src/routes/bags.js)
 - [middleware/errorHandler.js](file://backend/src/middleware/errorHandler.js)
 - [jobs/criticalPoller.js](file://backend/src/jobs/criticalPoller.js)
 - [jobs/routinePoller.js](file://backend/src/jobs/routinePoller.js)
+- [models/queries.js](file://backend/src/models/queries.js)
+- [models/redis.js](file://backend/src/models/redis.js)
+- [models/cacheKeys.js](file://backend/src/models/cacheKeys.js)
 - [package.json](file://backend/package.json)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added comprehensive Bags API service integration for token launch data and trading ecosystem
+- Enhanced configuration management with centralized config module supporting multiple API providers
+- Improved error handling across all services with graceful degradation and fallback mechanisms
+- Added new Bags ecosystem routes with cache-first patterns and comprehensive validation
+- Enhanced service initialization with better error handling and graceful failure modes
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -34,13 +44,13 @@
 10. [Appendices](#appendices)
 
 ## Introduction
-This document describes the InfraWatch service layer architecture, focusing on how the backend collects, transforms, and exposes real-time Solana infrastructure data. It explains the service layer pattern implementation, external API integrations, and business logic encapsulation. It covers the Solana RPC service, Helius integration, Validators.app integration, and the RPC prober service. It also documents initialization, configuration management, error handling, retry mechanisms, inter-service communication, data transformation, and caching integration. Finally, it provides usage examples, dependency injection patterns, and testing strategies.
+This document describes the InfraWatch service layer architecture, focusing on how the backend collects, transforms, and exposes real-time Solana infrastructure data. It explains the service layer pattern implementation, external API integrations, and business logic encapsulation. It covers the Solana RPC service, Helius integration, Validators.app integration, RPC prober service, and the new Bags API service for token launch ecosystem data. It also documents initialization, configuration management, error handling, retry mechanisms, inter-service communication, data transformation, and caching integration. Finally, it provides usage examples, dependency injection patterns, and testing strategies.
 
 ## Project Structure
-The backend follows a layered architecture:
+The backend follows a layered architecture with enhanced configuration management:
 - Entry point initializes Express, Socket.io, middleware, and schedules periodic jobs.
-- Services encapsulate external integrations and domain logic.
-- Routes define the API surface and orchestrate service calls.
+- Services encapsulate external integrations and domain logic with comprehensive error handling.
+- Routes define the API surface and orchestrate service calls with cache-first patterns.
 - Data Access Layer (DAL) abstracts database operations.
 - Models provide Redis caching and cache key conventions.
 - Jobs coordinate periodic data collection and broadcasting.
@@ -55,12 +65,14 @@ RIdx["routes/index.js"]
 RN["routes/network.js"]
 RR["routes/rpc.js"]
 RV["routes/validators.js"]
+RB["routes/bags.js"]
 end
 subgraph "Services"
 SRPC["services/solanaRpc.js"]
 SH["services/helius.js"]
 SV["services/validatorsApp.js"]
 PR["services/rpcProber.js"]
+BA["services/bagsApi.js"]
 end
 subgraph "Data Access"
 Q["models/queries.js"]
@@ -75,6 +87,7 @@ S --> RIdx
 RIdx --> RN
 RIdx --> RR
 RIdx --> RV
+RIdx --> RB
 RN --> Q
 RN --> RD
 RR --> Q
@@ -83,6 +96,8 @@ RR --> PR
 RV --> Q
 RV --> RD
 RV --> SV
+RB --> BA
+RB --> RD
 CP --> SRPC
 CP --> SH
 CP --> PR
@@ -96,49 +111,53 @@ RP --> RD
 
 **Diagram sources**
 - [server.js:1-128](file://backend/server.js#L1-L128)
-- [routes/index.js:1-24](file://backend/src/routes/index.js#L1-L24)
+- [routes/index.js:1-26](file://backend/src/routes/index.js#L1-L26)
 - [routes/network.js:1-135](file://backend/src/routes/network.js#L1-L135)
 - [routes/rpc.js:1-135](file://backend/src/routes/rpc.js#L1-L135)
 - [routes/validators.js:1-112](file://backend/src/routes/validators.js#L1-L112)
-- [services/solanaRpc.js:1-340](file://backend/src/services/solanaRpc.js#L1-L340)
+- [routes/bags.js:1-202](file://backend/src/routes/bags.js#L1-L202)
+- [services/solanaRpc.js:1-359](file://backend/src/services/solanaRpc.js#L1-L359)
 - [services/helius.js:1-188](file://backend/src/services/helius.js#L1-L188)
-- [services/validatorsApp.js:1-388](file://backend/src/services/validatorsApp.js#L1-L388)
+- [services/validatorsApp.js:1-416](file://backend/src/services/validatorsApp.js#L1-L416)
 - [services/rpcProber.js:1-342](file://backend/src/services/rpcProber.js#L1-L342)
+- [services/bagsApi.js:1-200](file://backend/src/services/bagsApi.js#L1-L200)
 - [models/queries.js:1-459](file://backend/src/models/queries.js#L1-L459)
 - [models/redis.js:1-161](file://backend/src/models/redis.js#L1-L161)
-- [models/cacheKeys.js:1-50](file://backend/src/models/cacheKeys.js#L1-L50)
-- [jobs/criticalPoller.js:1-108](file://backend/src/jobs/criticalPoller.js#L1-L108)
-- [jobs/routinePoller.js:1-116](file://backend/src/jobs/routinePoller.js#L1-L116)
+- [models/cacheKeys.js:1-51](file://backend/src/models/cacheKeys.js#L1-L51)
+- [jobs/criticalPoller.js:1-129](file://backend/src/jobs/criticalPoller.js#L1-L129)
+- [jobs/routinePoller.js:1-129](file://backend/src/jobs/routinePoller.js#L1-L129)
 
 **Section sources**
 - [server.js:1-128](file://backend/server.js#L1-L128)
-- [routes/index.js:1-24](file://backend/src/routes/index.js#L1-L24)
+- [routes/index.js:1-26](file://backend/src/routes/index.js#L1-L26)
 
 ## Core Components
 - Solana RPC Service: Collects network health, TPS, slot info, epoch info, delinquent validators, and confirmation time. Computes congestion score and aggregates a network snapshot.
 - Helius Integration: Provides priority fee estimates and enhanced TPS via Helius RPC. Gracefully handles missing API keys.
 - Validators.app Integration: Fetches validator data with rate limiting and caching. Normalizes data and detects commission changes.
 - RPC Prober Service: Probes multiple RPC providers for health and latency, computes rolling statistics, and recommends the best provider.
+- Bags API Service: Integrates with Bags FM for token launch data, trading ecosystem information, and liquidity pool data.
 - Data Access Layer: Encapsulates database operations for network snapshots, RPC health checks, validators, validator snapshots, and alerts.
 - Caching: Redis-backed cache with TTL constants and cache key helpers.
 - Jobs: Periodic collectors that orchestrate service calls, persist data, broadcast updates, and manage retries.
 
 **Section sources**
-- [services/solanaRpc.js:1-340](file://backend/src/services/solanaRpc.js#L1-L340)
+- [services/solanaRpc.js:1-359](file://backend/src/services/solanaRpc.js#L1-L359)
 - [services/helius.js:1-188](file://backend/src/services/helius.js#L1-L188)
-- [services/validatorsApp.js:1-388](file://backend/src/services/validatorsApp.js#L1-L388)
+- [services/validatorsApp.js:1-416](file://backend/src/services/validatorsApp.js#L1-L416)
 - [services/rpcProber.js:1-342](file://backend/src/services/rpcProber.js#L1-L342)
+- [services/bagsApi.js:1-200](file://backend/src/services/bagsApi.js#L1-L200)
 - [models/queries.js:1-459](file://backend/src/models/queries.js#L1-L459)
 - [models/redis.js:1-161](file://backend/src/models/redis.js#L1-L161)
-- [models/cacheKeys.js:1-50](file://backend/src/models/cacheKeys.js#L1-L50)
-- [jobs/criticalPoller.js:1-108](file://backend/src/jobs/criticalPoller.js#L1-L108)
-- [jobs/routinePoller.js:1-116](file://backend/src/jobs/routinePoller.js#L1-L116)
+- [models/cacheKeys.js:1-51](file://backend/src/models/cacheKeys.js#L1-L51)
+- [jobs/criticalPoller.js:1-129](file://backend/src/jobs/criticalPoller.js#L1-L129)
+- [jobs/routinePoller.js:1-129](file://backend/src/jobs/routinePoller.js#L1-L129)
 
 ## Architecture Overview
-The system uses a service-layer pattern where each service encapsulates a bounded responsibility:
-- External integrations are isolated in dedicated modules.
+The system uses a service-layer pattern where each service encapsulates a bounded responsibility with enhanced error handling:
+- External integrations are isolated in dedicated modules with graceful fallbacks.
 - Business logic is centralized in services (e.g., congestion scoring, normalization, rate limiting).
-- Routes act as orchestrators, delegating to services and DAL.
+- Routes act as orchestrators, delegating to services and DAL with cache-first patterns.
 - Jobs coordinate periodic tasks and broadcast updates via WebSocket.
 
 ```mermaid
@@ -148,6 +167,7 @@ participant CP as "CriticalPoller"
 participant SRPC as "SolanaRpc"
 participant SH as "Helius"
 participant PR as "RPC Prober"
+participant BA as "BagsApi"
 participant Q as "Queries"
 participant RD as "Redis"
 Cron->>CP : Schedule tick (every 30s)
@@ -158,6 +178,8 @@ SH-->>CP : priorityFeeData
 CP->>SRPC : calculateCongestionScore(tps, percentile90, slotLatencyMs)
 CP->>PR : probeAllProviders()
 PR-->>CP : rpcResults
+CP->>BA : getTokenLaunchFeed()/getBagsPools()
+BA-->>CP : bagsData (if configured)
 CP->>Q : insertNetworkSnapshot(...)
 CP->>Q : insertRpcHealthCheck(...) (for each provider)
 CP->>RD : setCache(NETWORK_CURRENT, snapshot)
@@ -166,15 +188,16 @@ CP-->>Cron : emit("network : update"/"rpc : update") via Socket.io
 ```
 
 **Diagram sources**
-- [jobs/criticalPoller.js:17-100](file://backend/src/jobs/criticalPoller.js#L17-L100)
-- [services/solanaRpc.js:275-328](file://backend/src/services/solanaRpc.js#L275-L328)
+- [jobs/criticalPoller.js:32-115](file://backend/src/jobs/criticalPoller.js#L32-L115)
+- [services/solanaRpc.js:289-347](file://backend/src/services/solanaRpc.js#L289-L347)
 - [services/helius.js:13-70](file://backend/src/services/helius.js#L13-L70)
 - [services/rpcProber.js:140-180](file://backend/src/services/rpcProber.js#L140-L180)
+- [services/bagsApi.js:13-81](file://backend/src/services/bagsApi.js#L13-L81)
 - [models/queries.js:27-118](file://backend/src/models/queries.js#L27-L118)
 - [models/redis.js:99-112](file://backend/src/models/redis.js#L99-L112)
 
 **Section sources**
-- [jobs/criticalPoller.js:17-100](file://backend/src/jobs/criticalPoller.js#L17-L100)
+- [jobs/criticalPoller.js:32-115](file://backend/src/jobs/criticalPoller.js#L32-L115)
 - [server.js:84-107](file://backend/server.js#L84-L107)
 
 ## Detailed Component Analysis
@@ -212,11 +235,11 @@ Skip --> Out
 ```
 
 **Diagram sources**
-- [services/solanaRpc.js:275-328](file://backend/src/services/solanaRpc.js#L275-L328)
+- [services/solanaRpc.js:289-347](file://backend/src/services/solanaRpc.js#L289-L347)
 - [services/solanaRpc.js:228-268](file://backend/src/services/solanaRpc.js#L228-L268)
 
 **Section sources**
-- [services/solanaRpc.js:10-340](file://backend/src/services/solanaRpc.js#L10-L340)
+- [services/solanaRpc.js:1-359](file://backend/src/services/solanaRpc.js#L1-L359)
 
 ### Helius Integration Service
 Responsibilities:
@@ -295,12 +318,12 @@ ValidatorsApp --> RateLimiter : "uses"
 ```
 
 **Diagram sources**
-- [services/validatorsApp.js:10-99](file://backend/src/services/validatorsApp.js#L10-L99)
+- [services/validatorsApp.js:9-99](file://backend/src/services/validatorsApp.js#L9-L99)
 - [services/validatorsApp.js:115-149](file://backend/src/services/validatorsApp.js#L115-L149)
 - [services/validatorsApp.js:156-179](file://backend/src/services/validatorsApp.js#L156-L179)
 
 **Section sources**
-- [services/validatorsApp.js:1-388](file://backend/src/services/validatorsApp.js#L1-L388)
+- [services/validatorsApp.js:1-416](file://backend/src/services/validatorsApp.js#L1-L416)
 
 ### RPC Prober Service
 Responsibilities:
@@ -337,6 +360,40 @@ RP-->>Caller : {p50,p95,p99,uptime,...}
 **Section sources**
 - [services/rpcProber.js:1-342](file://backend/src/services/rpcProber.js#L1-L342)
 
+### Bags API Service
+Responsibilities:
+- Integrates with Bags FM API for token launch ecosystem data.
+- Provides token launch feed, liquidity pools, lifetime fees, and trade quotes.
+- Implements comprehensive error handling and graceful degradation.
+
+Key behaviors:
+- Configurable via environment variables with API key validation.
+- Implements timeout handling and structured error responses.
+- Provides multiple endpoints for different types of token ecosystem data.
+
+```mermaid
+flowchart TD
+Start(["Bags API Service"]) --> CheckCfg{"API Key Configured?"}
+CheckCfg --> |No| ReturnNull["Return null (graceful fallback)"]
+CheckCfg --> |Yes| Endpoints["Available Endpoints"]
+Endpoints --> LaunchFeed["getTokenLaunchFeed()"]
+Endpoints --> Pools["getBagsPools()"]
+Endpoints --> Fees["getTokenLifetimeFees()"]
+Endpoints --> Quote["getTradeQuote()"]
+LaunchFeed --> Validate["Validate response"]
+Pools --> Validate
+Fees --> Validate
+Quote --> Validate
+Validate --> Success["Return data"]
+Validate --> Error["Log error and return null"]
+```
+
+**Diagram sources**
+- [services/bagsApi.js:13-183](file://backend/src/services/bagsApi.js#L13-L183)
+
+**Section sources**
+- [services/bagsApi.js:1-200](file://backend/src/services/bagsApi.js#L1-L200)
+
 ### Data Access Layer (DAL)
 Responsibilities:
 - Parameterized queries for network snapshots, RPC health checks, validators, validator snapshots, and alerts.
@@ -362,7 +419,7 @@ Key behaviors:
 
 **Section sources**
 - [models/redis.js:1-161](file://backend/src/models/redis.js#L1-L161)
-- [models/cacheKeys.js:1-50](file://backend/src/models/cacheKeys.js#L1-L50)
+- [models/cacheKeys.js:1-51](file://backend/src/models/cacheKeys.js#L1-L51)
 
 ### Jobs Orchestration
 Responsibilities:
@@ -375,14 +432,15 @@ Key behaviors:
 - Broadcasting via Socket.io for real-time UI updates.
 
 **Section sources**
-- [jobs/criticalPoller.js:1-108](file://backend/src/jobs/criticalPoller.js#L1-L108)
-- [jobs/routinePoller.js:1-116](file://backend/src/jobs/routinePoller.js#L1-L116)
+- [jobs/criticalPoller.js:1-129](file://backend/src/jobs/criticalPoller.js#L1-L129)
+- [jobs/routinePoller.js:1-129](file://backend/src/jobs/routinePoller.js#L1-L129)
 
 ### Routes and API Surface
 Responsibilities:
 - Network: current status and historical charts with cache-first strategy.
 - RPC: provider status, rolling stats, recommendation, and provider history.
 - Validators: top validators and detailed validator info with multi-source fallback.
+- Bags: token launch ecosystem data with cache-first pattern and comprehensive validation.
 
 Key behaviors:
 - Cache-first with Redis, fallback to DB.
@@ -393,11 +451,12 @@ Key behaviors:
 - [routes/network.js:1-135](file://backend/src/routes/network.js#L1-L135)
 - [routes/rpc.js:1-135](file://backend/src/routes/rpc.js#L1-L135)
 - [routes/validators.js:1-112](file://backend/src/routes/validators.js#L1-L112)
+- [routes/bags.js:1-202](file://backend/src/routes/bags.js#L1-L202)
 
 ## Dependency Analysis
 External dependencies and their roles:
 - @solana/web3.js: Solana RPC connectivity and metrics.
-- axios: HTTP client for Helius and Validators.app.
+- axios: HTTP client for Helius, Validators.app, and Bags FM APIs.
 - node-cron: Scheduling periodic jobs.
 - pg: PostgreSQL driver for the DAL.
 - ioredis: Redis client with retry strategy.
@@ -412,6 +471,7 @@ SRV --> RDI["models/redis.js"]
 RT --> RNW["routes/network.js"]
 RT --> RRP["routes/rpc.js"]
 RT --> RV["routes/validators.js"]
+RT --> RB["routes/bags.js"]
 RNW --> Q["models/queries.js"]
 RNW --> RD["models/redis.js"]
 RRP --> Q
@@ -420,9 +480,11 @@ RRP --> PR["services/rpcProber.js"]
 RV --> Q
 RV --> RD
 RV --> SV["services/validatorsApp.js"]
+RB --> BA["services/bagsApi.js"]
 CP["jobs/criticalPoller.js"] --> SRPC["services/solanaRpc.js"]
 CP --> SH["services/helius.js"]
 CP --> PR
+CP --> BA
 CP --> Q
 CP --> RD
 RPJ["jobs/routinePoller.js"] --> SV
@@ -433,15 +495,16 @@ RPJ --> RD
 
 **Diagram sources**
 - [server.js:1-128](file://backend/server.js#L1-L128)
-- [routes/index.js:1-24](file://backend/src/routes/index.js#L1-L24)
+- [routes/index.js:1-26](file://backend/src/routes/index.js#L1-L26)
 - [models/redis.js:1-161](file://backend/src/models/redis.js#L1-L161)
 - [models/queries.js:1-459](file://backend/src/models/queries.js#L1-L459)
-- [services/solanaRpc.js:1-340](file://backend/src/services/solanaRpc.js#L1-L340)
+- [services/solanaRpc.js:1-359](file://backend/src/services/solanaRpc.js#L1-L359)
 - [services/helius.js:1-188](file://backend/src/services/helius.js#L1-L188)
-- [services/validatorsApp.js:1-388](file://backend/src/services/validatorsApp.js#L1-L388)
+- [services/validatorsApp.js:1-416](file://backend/src/services/validatorsApp.js#L1-L416)
 - [services/rpcProber.js:1-342](file://backend/src/services/rpcProber.js#L1-L342)
-- [jobs/criticalPoller.js:1-108](file://backend/src/jobs/criticalPoller.js#L1-L108)
-- [jobs/routinePoller.js:1-116](file://backend/src/jobs/routinePoller.js#L1-L116)
+- [services/bagsApi.js:1-200](file://backend/src/services/bagsApi.js#L1-L200)
+- [jobs/criticalPoller.js:1-129](file://backend/src/jobs/criticalPoller.js#L1-L129)
+- [jobs/routinePoller.js:1-129](file://backend/src/jobs/routinePoller.js#L1-L129)
 
 **Section sources**
 - [package.json:22-34](file://backend/package.json#L22-L34)
@@ -453,14 +516,14 @@ RPJ --> RD
 - Retries: Redis client has retryStrategy and maxRetriesPerRequest; jobs handle transient failures gracefully.
 - Timeouts: External calls enforce timeouts to bound latency and prevent hanging requests.
 - Percentile calculations: Rolling stats use interpolation for accurate latency percentiles.
-
-[No sources needed since this section provides general guidance]
+- Graceful degradation: All services implement fallback mechanisms when external APIs are unavailable.
 
 ## Troubleshooting Guide
 Common issues and strategies:
 - Missing API keys or endpoints:
   - Helius: Service returns null when API key is missing; verify configuration.
   - Validators.app: Service logs when API key is missing; ensure environment variable is set.
+  - Bags FM: Service returns null when API key is missing; ensure BAGS_API_KEY is configured.
 - Redis unavailability:
   - Redis module returns null or false; routes and jobs continue with DB fallback.
 - Database outages:
@@ -469,18 +532,20 @@ Common issues and strategies:
   - RPC Prober records error messages and marks providers unhealthy; routes still return partial data.
 - Error handling middleware:
   - Centralized error handler converts known errors to appropriate HTTP responses and logs details.
+- Bags API specific:
+  - All Bags API endpoints return 503 status when API is not configured.
+  - Token mint validation ensures proper parameters are provided.
 
 **Section sources**
 - [services/helius.js:14-18](file://backend/src/services/helius.js#L14-L18)
 - [services/validatorsApp.js:116-119](file://backend/src/services/validatorsApp.js#L116-L119)
+- [services/bagsApi.js:14-18](file://backend/src/services/bagsApi.js#L14-L18)
 - [models/redis.js:75-89](file://backend/src/models/redis.js#L75-L89)
 - [jobs/criticalPoller.js:49-63](file://backend/src/jobs/criticalPoller.js#L49-L63)
 - [middleware/errorHandler.js:44-109](file://backend/src/middleware/errorHandler.js#L44-L109)
 
 ## Conclusion
-InfraWatch’s service layer cleanly separates concerns across external integrations, business logic, persistence, and presentation. The design emphasizes resilience through caching, rate limiting, and graceful degradation. Periodic jobs keep data fresh, while routes provide a robust, cache-first API. The architecture supports easy extension and testing, with clear boundaries between services and modules.
-
-[No sources needed since this section summarizes without analyzing specific files]
+InfraWatch's service layer cleanly separates concerns across external integrations, business logic, persistence, and presentation. The design emphasizes resilience through comprehensive error handling, caching, rate limiting, and graceful degradation. The addition of the Bags API service enhances the platform's capabilities for tracking token launch ecosystems. Periodic jobs keep data fresh, while routes provide a robust, cache-first API. The architecture supports easy extension and testing, with clear boundaries between services and modules.
 
 ## Appendices
 
@@ -488,13 +553,14 @@ InfraWatch’s service layer cleanly separates concerns across external integrat
 - Configuration loading:
   - Loads .env if present, merges with environment variables, and constructs derived URLs (e.g., Helius RPC URL).
   - Defines polling intervals, Redis URL, and CORS origin.
+  - Supports multiple API configurations: Solana RPC, Validators.app, Bags FM.
 - Redis initialization:
   - Lazy connection with retry strategy and event logging.
 - Server startup:
   - Initializes database and Redis, mounts routes, sets up Socket.io, and starts jobs.
 
 **Section sources**
-- [config/index.js:1-68](file://backend/src/config/index.js#L1-L68)
+- [config/index.js:1-74](file://backend/src/config/index.js#L1-L74)
 - [models/redis.js:16-68](file://backend/src/models/redis.js#L16-L68)
 - [server.js:84-107](file://backend/server.js#L84-L107)
 
@@ -502,12 +568,14 @@ InfraWatch’s service layer cleanly separates concerns across external integrat
 - Jobs orchestrate services and DAL, emitting updates via Socket.io.
 - Routes delegate to services and DAL, applying cache-first policies.
 - Services remain stateless and rely on shared configuration and Redis.
+- Bags API service integrates seamlessly with existing service patterns.
 
 **Section sources**
 - [jobs/criticalPoller.js:33-92](file://backend/src/jobs/criticalPoller.js#L33-L92)
 - [routes/network.js:17-79](file://backend/src/routes/network.js#L17-L79)
 - [routes/rpc.js:17-88](file://backend/src/routes/rpc.js#L17-L88)
 - [routes/validators.js:52-109](file://backend/src/routes/validators.js#L52-L109)
+- [routes/bags.js:20-68](file://backend/src/routes/bags.js#L20-L68)
 
 ### Data Transformation Processes
 - Solana RPC:
@@ -517,25 +585,32 @@ InfraWatch’s service layer cleanly separates concerns across external integrat
   - Commission change detection via cached vs. current comparison.
 - RPC Prober:
   - Provider results transformed into rolling statistics and recommendations.
+- Bags API:
+  - Token launch data normalized to consistent schema.
+  - Trade quotes processed and validated for accuracy.
 
 **Section sources**
-- [services/solanaRpc.js:275-328](file://backend/src/services/solanaRpc.js#L275-L328)
+- [services/solanaRpc.js:289-347](file://backend/src/services/solanaRpc.js#L289-L347)
 - [services/validatorsApp.js:156-179](file://backend/src/services/validatorsApp.js#L156-L179)
 - [services/rpcProber.js:208-250](file://backend/src/services/rpcProber.js#L208-L250)
+- [services/bagsApi.js:13-81](file://backend/src/services/bagsApi.js#L13-L81)
 
 ### Caching Integration Details
 - Cache keys:
   - Centralized constants for network, RPC, validators, and history with TTL values.
+  - Added Bags-specific cache keys with 60-second TTL.
 - Redis operations:
   - Lazy initialization, JSON serialization, TTL, and error-safe operations.
 - Route cache-first:
   - Network and validators routes attempt Redis first, then DB, and cache responses.
+  - Bags routes implement cache-first with 60-second TTL for pools and launches.
 
 **Section sources**
-- [models/cacheKeys.js:1-50](file://backend/src/models/cacheKeys.js#L1-L50)
+- [models/cacheKeys.js:1-51](file://backend/src/models/cacheKeys.js#L1-L51)
 - [models/redis.js:75-112](file://backend/src/models/redis.js#L75-L112)
 - [routes/network.js:19-42](file://backend/src/routes/network.js#L19-L42)
 - [routes/validators.js:22-42](file://backend/src/routes/validators.js#L22-L42)
+- [routes/bags.js:12-13](file://backend/src/routes/bags.js#L12-L13)
 
 ### Examples of Service Usage
 - Network route:
@@ -544,21 +619,38 @@ InfraWatch’s service layer cleanly separates concerns across external integrat
   - GET /api/rpc/status merges latest results with rolling stats and provides a recommendation.
 - Validators route:
   - GET /api/validators/:votePubkey attempts Redis cache, then Validators.app, then DB.
+- Bags routes:
+  - GET /api/bags/pools returns cached or fresh pools data with migration filtering.
+  - GET /api/bags/launches returns token launch feed with cache-first approach.
+  - GET /api/bags/fees/:tokenMint returns lifetime fees for a specific token.
+  - GET /api/bags/quote returns trade quotes with parameter validation.
 
 **Section sources**
 - [routes/network.js:17-79](file://backend/src/routes/network.js#L17-L79)
 - [routes/rpc.js:17-88](file://backend/src/routes/rpc.js#L17-L88)
 - [routes/validators.js:52-109](file://backend/src/routes/validators.js#L52-L109)
+- [routes/bags.js:16-199](file://backend/src/routes/bags.js#L16-L199)
 
 ### Dependency Injection and Testing Strategies
 - Dependency injection:
   - Services are pure modules exporting functions; routes import and call them directly.
   - Jobs import services and DAL; server imports routes and jobs.
 - Testing strategies:
-  - Mock external services (Helius, Validators.app) by stubbing axios and returning controlled responses.
+  - Mock external services (Helius, Validators.app, Bags FM) by stubbing axios and returning controlled responses.
   - Test rate limiter behavior by simulating queue acquisition and window expiration.
   - Verify congestion score calculation with known TPS, fee, and latency inputs.
   - Validate RPC prober percentile calculations with deterministic arrays.
   - Use in-memory history for RPC prober tests and clearHistory to reset state.
+  - Test Bags API error handling by mocking API failures and verifying graceful fallbacks.
 
-[No sources needed since this section provides general guidance]
+### Enhanced Error Handling and Graceful Degradation
+- All services implement comprehensive error handling with structured logging.
+- Graceful fallback mechanisms ensure system continues operating when external APIs fail.
+- Timeout configurations prevent hanging requests and resource exhaustion.
+- Centralized error handling middleware standardizes error responses across all routes.
+
+**Section sources**
+- [services/bagsApi.js:38-41](file://backend/src/services/bagsApi.js#L38-L41)
+- [services/helius.js:66-69](file://backend/src/services/helius.js#L66-L69)
+- [services/validatorsApp.js:141-148](file://backend/src/services/validatorsApp.js#L141-L148)
+- [routes/bags.js:45-50](file://backend/src/routes/bags.js#L45-L50)
