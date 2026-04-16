@@ -216,7 +216,7 @@ async function getConfirmationTime() {
     }
 
     const avgSlotTimeSecs = totalSlotTime / validSamples;
-    // Optimistic confirmation typically takes ~32 slots
+    // Finalized confirmation requires ~32 slots (Tower BFT max lockout)
     const avgConfirmationMs = Math.round(avgSlotTimeSecs * 32 * 1000);
 
     return {

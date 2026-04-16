@@ -7,7 +7,7 @@ import { formatNumber } from '../../utils/formatters';
 
 const getTpsStatus = (tps) => {
   if (!tps && tps !== 0) return 'healthy';
-  if (tps >= 2000) return 'healthy';
+  if (tps >= 2500) return 'healthy';
   if (tps >= 1000) return 'degraded';
   return 'critical';
 };

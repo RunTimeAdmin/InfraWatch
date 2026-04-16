@@ -6,7 +6,7 @@ const getNetworkStatus = (current) => {
   
   const { tps, congestionScore } = current;
   
-  if (tps > 1500 && congestionScore < 60) {
+  if (tps > 2500 && congestionScore < 60) {
     return { 
       status: 'healthy', 
       label: 'NETWORK HEALTHY', 
@@ -14,7 +14,7 @@ const getNetworkStatus = (current) => {
       color: '#00ff88'
     };
   }
-  if (tps > 500 && congestionScore < 80) {
+  if (tps > 1000 && congestionScore < 80) {
     return { 
       status: 'degraded', 
       label: 'NETWORK DEGRADED', 

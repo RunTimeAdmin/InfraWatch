@@ -10,8 +10,14 @@ export default function DelinquentValidatorsCard() {
   const delinquentCount = current?.delinquentCount ?? null;
   const activeCount = current?.activeValidators ?? null;
   
-  const hasDelinquents = delinquentCount > 0;
-  const status = hasDelinquents ? 'critical' : 'healthy';
+  const getDelinquentStatus = (count) => {
+    if (count === null || count === undefined) return 'healthy';
+    if (count < 50) return 'healthy';
+    if (count < 200) return 'degraded';
+    return 'critical';
+  };
+  
+  const status = getDelinquentStatus(delinquentCount);
   
   return (
     <MetricCard
@@ -21,7 +27,7 @@ export default function DelinquentValidatorsCard() {
       status={status}
       lucideIcon={AlertTriangle}
     >
-      {hasDelinquents && (
+      {status === 'critical' && (
         <div className="mt-2 flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-accent-red animate-pulse" />
           <span className="text-xs text-accent-red">
@@ -29,11 +35,19 @@ export default function DelinquentValidatorsCard() {
           </span>
         </div>
       )}
-      {!hasDelinquents && delinquentCount !== null && (
+      {status === 'healthy' && delinquentCount !== null && (
         <div className="mt-2 flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-accent-green" />
           <span className="text-xs text-accent-green">
             All validators healthy
+          </span>
+        </div>
+      )}
+      {status === 'degraded' && (
+        <div className="mt-2 flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-accent-orange animate-pulse" />
+          <span className="text-xs text-accent-orange">
+            Elevated delinquency
           </span>
         </div>
       )}
