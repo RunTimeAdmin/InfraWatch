@@ -26,17 +26,18 @@ router.get('/current', async (req, res, next) => {
 
     if (cached) {
       // Transform snapshot to API response format
+      // Snapshot from Redis uses camelCase field names
       return res.json({
         status: cached.health || 'unknown',
         tps: cached.tps,
         slotHeight: cached.slot,
-        slotLatencyMs: cached.slot_latency_ms,
+        slotLatencyMs: cached.slotLatencyMs ?? cached.slot_latency_ms,
         epoch: cached.epoch,
-        epochProgress: cached.epoch_progress,
-        delinquentCount: cached.delinquent_validators,
-        activeValidators: cached.total_validators,
-        confirmationTimeMs: cached.avg_confirmation_ms,
-        congestionScore: cached.congestion_score,
+        epochProgress: cached.epochProgress ?? cached.epoch_progress,
+        delinquentCount: cached.delinquentValidators ?? cached.delinquent_validators,
+        activeValidators: cached.totalValidators ?? cached.total_validators,
+        confirmationTimeMs: cached.avgConfirmationMs ?? cached.avg_confirmation_ms,
+        congestionScore: cached.congestionScore ?? cached.congestion_score,
         timestamp: cached.timestamp,
       });
     }
