@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/RunTimeAdmin/InfraWatch/actions/workflows/ci.yml"><img src="https://github.com/RunTimeAdmin/InfraWatch/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
   <img src="https://img.shields.io/badge/node-20+-green.svg" alt="Node.js 20+" />
   <img src="https://img.shields.io/badge/react-18-61dafb.svg" alt="React 18" />
