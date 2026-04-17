@@ -18,6 +18,13 @@
 - [rpcApi.js](file://frontend/src/services/rpcApi.js)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Updated latency calculation precision section to reflect Math.round() enhancements
+- Added detailed explanation of floating-point precision improvements
+- Updated rolling statistics computation documentation with precision handling details
+- Enhanced percentile calculation documentation with rounding improvements
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
@@ -77,9 +84,9 @@ M --> L
 **Diagram sources**
 - [server.js:1-128](file://backend/server.js#L1-L128)
 - [rpc.js:1-135](file://backend/src/routes/rpc.js#L1-L135)
-- [rpcProber.js:1-342](file://backend/src/services/rpcProber.js#L1-L342)
-- [criticalPoller.js:1-108](file://backend/src/jobs/criticalPoller.js#L1-L108)
-- [routinePoller.js:1-116](file://backend/src/jobs/routinePoller.js#L1-L116)
+- [rpcProber.js:1-343](file://backend/src/services/rpcProber.js#L1-L343)
+- [criticalPoller.js:1-129](file://backend/src/jobs/criticalPoller.js#L1-L129)
+- [routinePoller.js:1-129](file://backend/src/jobs/routinePoller.js#L1-L129)
 - [queries.js:1-459](file://backend/src/models/queries.js#L1-L459)
 - [redis.js:1-161](file://backend/src/models/redis.js#L1-L161)
 - [db.js:1-98](file://backend/src/models/db.js#L1-L98)
@@ -93,7 +100,7 @@ M --> L
 **Section sources**
 - [server.js:1-128](file://backend/server.js#L1-L128)
 - [rpc.js:1-135](file://backend/src/routes/rpc.js#L1-L135)
-- [rpcProber.js:1-342](file://backend/src/services/rpcProber.js#L1-L342)
+- [rpcProber.js:1-343](file://backend/src/services/rpcProber.js#L1-L343)
 
 ## Core Components
 - RPC Prober Engine: Orchestrates probing of multiple providers, concurrent execution, result aggregation, and rolling statistics calculation.
@@ -105,10 +112,10 @@ M --> L
 - Frontend Dashboard: Consumes RPC status via REST and real-time WebSocket updates for live monitoring.
 
 **Section sources**
-- [rpcProber.js:1-342](file://backend/src/services/rpcProber.js#L1-L342)
+- [rpcProber.js:1-343](file://backend/src/services/rpcProber.js#L1-L343)
 - [rpc.js:1-135](file://backend/src/routes/rpc.js#L1-L135)
-- [criticalPoller.js:1-108](file://backend/src/jobs/criticalPoller.js#L1-L108)
-- [routinePoller.js:1-116](file://backend/src/jobs/routinePoller.js#L1-L116)
+- [criticalPoller.js:1-129](file://backend/src/jobs/criticalPoller.js#L1-L129)
+- [routinePoller.js:1-129](file://backend/src/jobs/routinePoller.js#L1-L129)
 - [queries.js:1-459](file://backend/src/models/queries.js#L1-L459)
 - [redis.js:1-161](file://backend/src/models/redis.js#L1-L161)
 
@@ -149,7 +156,7 @@ API-->>UI : Enhanced status payload
 ```
 
 **Diagram sources**
-- [criticalPoller.js:21-100](file://backend/src/jobs/criticalPoller.js#L21-L100)
+- [criticalPoller.js:21-129](file://backend/src/jobs/criticalPoller.js#L21-L129)
 - [rpcProber.js:140-180](file://backend/src/services/rpcProber.js#L140-L180)
 - [rpc.js:17-88](file://backend/src/routes/rpc.js#L17-L88)
 - [queries.js:101-118](file://backend/src/models/queries.js#L101-L118)
@@ -163,11 +170,13 @@ The prober encapsulates the core logic for health checking, latency measurement,
 
 - Provider Configuration: Defines public and premium providers, including optional API key requirements and environment-based overrides.
 - Concurrent Probing: Executes all provider checks in parallel using Promise.allSettled to ensure resilience against partial failures.
-- Latency Measurement: Captures start/end timestamps around each request to compute response latency.
+- Latency Measurement: Captures start/end timestamps around each request to compute response latency with enhanced precision.
 - Response Validation: Treats RPC errors and network exceptions as unhealthy states with error messages.
 - History Management: Maintains an in-memory history per provider with a bounded size and updates the latest results cache.
-- Rolling Statistics: Computes percentiles (p50/p95/p99), uptime percentage, and last incident timestamp from recent checks.
+- Rolling Statistics: Computes percentiles (p50/p95/p99), uptime percentage, and last incident timestamp from recent checks with improved numerical precision.
 - Best Provider Selection: Recommends the highest-performing healthy provider based on p95 latency.
+
+**Updated** Enhanced latency calculation precision with Math.round() function calls to address floating-point display artifacts in percentile calculations, weighted interpolation, and current latency measurements.
 
 ```mermaid
 flowchart TD
@@ -176,7 +185,8 @@ Parallel --> Aggregate["Aggregate results"]
 Aggregate --> UpdateCache["Update latest results cache"]
 UpdateCache --> UpdateHistory["Append to provider history"]
 UpdateHistory --> Stats["Compute rolling stats per provider"]
-Stats --> Best["Select best provider (p95 latency)"]
+Stats --> Precision["Apply Math.round() for precision"]
+Precision --> Best["Select best provider (p95 latency)"]
 Best --> End(["Return results"])
 ```
 
@@ -263,20 +273,20 @@ CP->>IO : emit("rpc : update", results)
 ```
 
 **Diagram sources**
-- [criticalPoller.js:21-100](file://backend/src/jobs/criticalPoller.js#L21-L100)
+- [criticalPoller.js:21-129](file://backend/src/jobs/criticalPoller.js#L21-L129)
 - [rpcProber.js:140-180](file://backend/src/services/rpcProber.js#L140-L180)
 - [queries.js:101-118](file://backend/src/models/queries.js#L101-L118)
 - [redis.js:99-112](file://backend/src/models/redis.js#L99-L112)
 - [index.js](file://backend/src/websocket/index.js)
 
 **Section sources**
-- [criticalPoller.js:21-100](file://backend/src/jobs/criticalPoller.js#L21-L100)
+- [criticalPoller.js:21-129](file://backend/src/jobs/criticalPoller.js#L21-L129)
 
 ### Routine Poller
 The routine poller runs every 5 minutes and focuses on validator data and related tasks. It does not trigger RPC probing, maintaining separation of concerns between critical and routine monitoring.
 
 **Section sources**
-- [routinePoller.js:21-108](file://backend/src/jobs/routinePoller.js#L21-L108)
+- [routinePoller.js:21-129](file://backend/src/jobs/routinePoller.js#L21-L129)
 
 ### Data Access Layer and Caching
 - PostgreSQL: Provides durable storage for network snapshots and RPC health checks with parameterized queries to prevent SQL injection.
@@ -352,10 +362,10 @@ UI --> WS
 
 **Diagram sources**
 - [index.js](file://backend/src/config/index.js)
-- [rpcProber.js:1-342](file://backend/src/services/rpcProber.js#L1-L342)
+- [rpcProber.js:1-343](file://backend/src/services/rpcProber.js#L1-L343)
 - [rpc.js:1-135](file://backend/src/routes/rpc.js#L1-L135)
-- [criticalPoller.js:1-108](file://backend/src/jobs/criticalPoller.js#L1-L108)
-- [routinePoller.js:1-116](file://backend/src/jobs/routinePoller.js#L1-L116)
+- [criticalPoller.js:1-129](file://backend/src/jobs/criticalPoller.js#L1-L129)
+- [routinePoller.js:1-129](file://backend/src/jobs/routinePoller.js#L1-L129)
 - [queries.js:1-459](file://backend/src/models/queries.js#L1-L459)
 - [redis.js:1-161](file://backend/src/models/redis.js#L1-L161)
 - [db.js:1-98](file://backend/src/models/db.js#L1-L98)
@@ -363,10 +373,10 @@ UI --> WS
 - [RpcHealth.jsx:1-195](file://frontend/src/pages/RpcHealth.jsx#L1-L195)
 
 **Section sources**
-- [rpcProber.js:1-342](file://backend/src/services/rpcProber.js#L1-L342)
+- [rpcProber.js:1-343](file://backend/src/services/rpcProber.js#L1-L343)
 - [rpc.js:1-135](file://backend/src/routes/rpc.js#L1-L135)
-- [criticalPoller.js:1-108](file://backend/src/jobs/criticalPoller.js#L1-L108)
-- [routinePoller.js:1-116](file://backend/src/jobs/routinePoller.js#L1-L116)
+- [criticalPoller.js:1-129](file://backend/src/jobs/criticalPoller.js#L1-L129)
+- [routinePoller.js:1-129](file://backend/src/jobs/routinePoller.js#L1-L129)
 - [queries.js:1-459](file://backend/src/models/queries.js#L1-L459)
 - [redis.js:1-161](file://backend/src/models/redis.js#L1-L161)
 - [db.js:1-98](file://backend/src/models/db.js#L1-L98)
@@ -380,8 +390,7 @@ UI --> WS
 - Caching: Latest results are cached in Redis with short TTLs to accelerate endpoint responses and reduce database load.
 - Database Efficiency: Parameterized queries and batched inserts minimize overhead and prevent SQL injection.
 - Graceful Degradation: When Redis or database is unavailable, the system continues operating with reduced capabilities, prioritizing stability.
-
-[No sources needed since this section provides general guidance]
+- **Enhanced Precision**: Floating-point calculations now use Math.round() to eliminate display artifacts and improve numerical precision in percentile calculations, weighted interpolation, and current latency measurements.
 
 ## Troubleshooting Guide
 Common issues and resolutions:
@@ -398,9 +407,13 @@ Common issues and resolutions:
 - Incorrect provider recommendations:
   - Ensure uptime thresholds and percentile calculations align with expectations.
   - Validate provider categories and metadata.
+- **Precision Issues**:
+  - Verify that latency values are displaying as whole numbers after Math.round() implementation.
+  - Check that percentile calculations show consistent decimal precision.
+  - Confirm uptime percentages are properly rounded to two decimal places.
 
 **Section sources**
-- [criticalPoller.js:21-100](file://backend/src/jobs/criticalPoller.js#L21-L100)
+- [criticalPoller.js:21-129](file://backend/src/jobs/criticalPoller.js#L21-L129)
 - [redis.js:75-112](file://backend/src/models/redis.js#L75-L112)
 - [db.js:15-47](file://backend/src/models/db.js#L15-L47)
 - [rpcProber.js:295-307](file://backend/src/services/rpcProber.js#L295-L307)
@@ -408,7 +421,7 @@ Common issues and resolutions:
 ## Conclusion
 The RPC Prober Service provides robust, real-time monitoring of Solana RPC providers with concurrent probing, precise latency measurement, comprehensive uptime tracking, and actionable recommendations. Its integration with PostgreSQL and Redis ensures reliable persistence and fast retrieval, while WebSocket broadcasting enables a responsive dashboard experience. The modular design and scheduled job architecture support scalability and maintainability.
 
-[No sources needed since this section summarizes without analyzing specific files]
+**Updated** Recent enhancements have improved numerical precision handling across all latency calculations, eliminating floating-point display artifacts and providing more reliable percentile computations for better decision-making.
 
 ## Appendices
 
@@ -420,7 +433,7 @@ The RPC Prober Service provides robust, real-time monitoring of Solana RPC provi
 - Broadcasting: Real-time updates sent via WebSocket to connected clients.
 
 **Section sources**
-- [criticalPoller.js:21-100](file://backend/src/jobs/criticalPoller.js#L21-L100)
+- [criticalPoller.js:21-129](file://backend/src/jobs/criticalPoller.js#L21-L129)
 - [rpcProber.js:140-180](file://backend/src/services/rpcProber.js#L140-L180)
 - [queries.js:101-118](file://backend/src/models/queries.js#L101-L118)
 - [redis.js:99-112](file://backend/src/models/redis.js#L99-L112)
@@ -430,6 +443,7 @@ The RPC Prober Service provides robust, real-time monitoring of Solana RPC provi
 - Aggregation: Latest database results merged with rolling statistics from the prober.
 - Metrics: p50/p95/p99 latency percentiles, uptime percentage, total and healthy checks, last incident timestamp.
 - Recommendation: Best provider selected among healthy providers with the lowest p95 latency.
+- **Precision Handling**: All latency values are now rounded to whole numbers for consistent display and comparison.
 
 **Section sources**
 - [rpc.js:47-88](file://backend/src/routes/rpc.js#L47-L88)
@@ -466,3 +480,18 @@ The RPC Prober Service provides robust, real-time monitoring of Solana RPC provi
 **Section sources**
 - [rpcProber.js:97-133](file://backend/src/services/rpcProber.js#L97-L133)
 - [rpcProber.js:295-307](file://backend/src/services/rpcProber.js#L295-L307)
+
+### Enhanced Latency Calculation Precision
+**Updated** The RPC Prober Service now implements enhanced numerical precision handling through strategic Math.round() function calls:
+
+- **Percentile Calculations**: The percentile function now applies Math.round() to the final interpolated result, eliminating floating-point artifacts in p50/p95/p99 calculations.
+- **Current Latency**: Individual latency measurements are rounded to whole milliseconds for consistent display and comparison.
+- **Uptime Percentage**: Uptime calculations use Math.round(uptimePercent * 100) / 100 to maintain two-decimal precision while avoiding floating-point representation issues.
+- **Weighted Interpolation**: The percentile calculation uses Math.round() for both boundary values and the final weighted result, ensuring stable and predictable percentile outputs.
+
+These precision improvements enhance the reliability of statistical computations and provide cleaner, more readable metrics for the monitoring dashboard.
+
+**Section sources**
+- [rpcProber.js:188-201](file://backend/src/services/rpcProber.js#L188-L201)
+- [rpcProber.js:238](file://backend/src/services/rpcProber.js#L238)
+- [rpcProber.js:246](file://backend/src/services/rpcProber.js#L246)

@@ -136,10 +136,10 @@ npm run dev
 
 ## Roadmap
 
-- [x] **Week 1:** Foundation — Backend services, data pipeline, war room dashboard, RPC monitor, Bags API integration
-- [ ] **Week 2:** Validator scoring cards, commission change tracker, data center map
-- [ ] **Week 3:** MEV tracker, Bags ecosystem correlation panel
-- [ ] **Week 4:** Alert engine, Bags chat integration, $WATCH token
+- [x] **v0.1 Foundation** — Backend services, war room dashboard, RPC monitor, Bags API integration
+- [ ] **v0.2 Validators** — Scoring cards, commission tracker, data center map
+- [ ] **v0.3 MEV** — MEV tracker, Bags ecosystem correlation panel
+- [ ] **v0.4 Alerts** — Alert engine, notification system, token-gated premium alerts (planned)
 
 ---
 

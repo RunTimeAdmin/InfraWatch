@@ -73,6 +73,10 @@ const MAX_HISTORY_SIZE = 100; // Keep last 100 checks per provider
  * @returns {Promise<{providerName: string, endpoint: string, latencyMs: number, isHealthy: boolean, slotHeight: number, error?: string, timestamp: string}>}
  */
 async function probeProvider(provider) {
+  // Add jitter to prevent synchronized probe bursts
+  const jitter = Math.random() * 5000; // 0-5 second random delay
+  await new Promise(resolve => setTimeout(resolve, jitter));
+
   const startTime = Date.now();
   const timestamp = new Date().toISOString();
 
