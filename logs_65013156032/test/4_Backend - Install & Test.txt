@@ -1,0 +1,17 @@
+﻿2026-04-17T04:23:48.5719623Z ##[group]Run cd backend && npm ci && npm test --if-present
+2026-04-17T04:23:48.5720523Z [36;1mcd backend && npm ci && npm test --if-present[0m
+2026-04-17T04:23:48.5757444Z shell: /usr/bin/bash -e {0}
+2026-04-17T04:23:48.5757994Z ##[endgroup]
+2026-04-17T04:23:51.5269238Z 
+2026-04-17T04:23:51.5277148Z added 202 packages, and audited 203 packages in 3s
+2026-04-17T04:23:51.5278134Z 
+2026-04-17T04:23:51.5278777Z 37 packages are looking for funding
+2026-04-17T04:23:51.5279403Z   run `npm fund` for details
+2026-04-17T04:23:51.5279850Z 
+2026-04-17T04:23:51.5280355Z found 0 vulnerabilities
+2026-04-17T04:23:51.6554871Z 
+2026-04-17T04:23:51.6555825Z > infrawatch-backend@1.0.0 test
+2026-04-17T04:23:51.6556651Z > echo "Error: no test specified" && exit 1
+2026-04-17T04:23:51.6557064Z 
+2026-04-17T04:23:51.6592693Z Error: no test specified
+2026-04-17T04:23:51.6680589Z ##[error]Process completed with exit code 1.
